@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V23 - 穩定修復版</title>
+    <title>魔法大師 V25 - 符文鎖定版</title>
     
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -14,45 +14,64 @@
         .page { display: none; padding: 20px; box-sizing: border-box; min-height: 100dvh; flex-direction: column; }
         .page.active { display: flex; }
 
+        /* 介面組件 */
         .wizard-icon { font-size: 70px; text-align: center; margin: 10px 0; filter: drop-shadow(0 0 15px var(--m-blue)); animation: float 3s ease-in-out infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 15px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
-        .magic-card { background: #fdf5e6; color: #333; border-radius: 20px; padding: 30px 10px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); }
+        .magic-card { background: #fdf5e6; color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); }
         .target-word { font-size: 60px; font-weight: 900; letter-spacing: 8px; color: #222; margin: 10px 0; }
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; overflow-y: auto; max-height: 35vh; padding: 5px; }
         .scroll-icon { background: rgba(255,255,255,0.05); border: 1px solid var(--m-gold); border-radius: 8px; padding: 8px 2px; text-align: center; font-size: 9px; min-height: 55px; display: flex; flex-direction: column; justify-content: center; }
         
-        .progress-container { width: 80%; background: #333; border-radius: 10px; height: 12px; margin: 15px 0; overflow: hidden; border: 1px solid var(--m-gold); }
-        .progress-fill { width: 0%; background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; transition: width 0.4s ease; }
-        .chest-container { display: flex; justify-content: space-around; align-items: center; margin-top: 40px; flex-grow: 1; }
-        .chest { font-size: 60px; cursor: pointer; transition: 0.3s; }
-        .chest.shake { animation: shake 0.6s infinite; }
-        
-        .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; }
+        /* 核心：即時相機與瞄準框 */
+        .camera-container {
+            position: relative; width: 100%; height: 300px; 
+            background: #000; border-radius: 20px; overflow: hidden; margin-top: 15px;
+            border: 2px solid var(--m-blue);
+        }
+        #video { width: 100%; height: 100%; object-fit: cover; }
+        .viewfinder {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; height: 120px;
+            border: 3px solid var(--m-gold); border-radius: 10px;
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); /* 遮罩四周 */
+            pointer-events: none; z-index: 10;
+        }
+        .viewfinder::after {
+            content: "將符文置於框內"; position: absolute; bottom: -25px; left: 50%;
+            transform: translateX(-50%); color: var(--m-gold); font-size: 12px; white-space: nowrap;
+        }
+
+        .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; box-sizing: border-box; }
         .btn-gold { background: linear-gradient(45deg, var(--m-gold), #FFA500); color: black; }
         .btn-outline { background: transparent; border: 2px solid var(--m-blue); color: white; }
 
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } }
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .review-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
-        .review-item { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
-        .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid var(--m-gold); }
-        .btn-mini { font-size: 10px; border: none; padding: 5px 10px; border-radius: 4px; color: white; }
+        
+        /* 鑑定室 */
+        .review-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .preview-img { width: 80px; height: 50px; object-fit: contain; background: #fff; border-radius: 5px; border: 1px solid var(--m-gold); cursor: zoom-in; }
+        
+        /* 放大燈箱 */
+        .photo-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 6000; display: none; align-items: center; justify-content: center; }
+        .photo-modal img { max-width: 95%; max-height: 80%; border: 2px solid white; }
     </style>
 </head>
 <body>
 
+<div id="photo-modal" class="photo-modal" onclick="closeZoom()"><img id="zoomed-image" src=""></div>
+
 <div id="loader" class="loader">
     <div style="border: 4px solid #333; border-top: 4px solid var(--m-gold); width: 40px; height: 40px; border-radius: 50%; animation: rotate 1s linear infinite;"></div>
-    <p id="loader-text" style="margin-top:15px; color:var(--m-gold); font-weight: bold;">正在施展鑑定咒語...</p>
-    <div class="progress-container"><div id="progress-fill" class="progress-fill"></div></div>
-    <p id="progress-status" style="font-size: 14px; color: #aaa;">0 / 10</p>
+    <p id="loader-text" style="margin-top:15px; color:var(--m-gold);">正在用魔力鑑定...</p>
+    <div style="width:80%; height:10px; background:#333; border-radius:5px; margin-top:10px; overflow:hidden; border:1px solid var(--m-gold);">
+        <div id="progress-fill" style="width:0%; height:100%; background:var(--m-gold); transition:0.3s;"></div>
+    </div>
 </div>
 
-<!-- 1. 角色選擇頁面 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：角色登錄</h2>
+    <h2 style="text-align: center; color: var(--m-gold);">真理之書：符文鎖定</h2>
     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 30px;">
         <div class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</div>
         <div class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</div>
@@ -60,47 +79,46 @@
     </div>
 </div>
 
-<!-- 2. 圖鑑主頁面 -->
 <div id="page-home" class="page">
     <div style="display:flex; justify-content: space-between; align-items: center;">
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
         <button onclick="location.reload()" style="background:none; border:1px solid white; color:white; border-radius:5px; padding:2px 8px; font-size:11px;">登出</button>
     </div>
     <div class="energy-bar">⚡ 今日剩餘領獎：<span id="daily-energy">3 / 3</span></div>
-    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 15px; flex-grow: 1;"><div id="tome-grid" class="tome-grid"></div></div>
-    <div style="margin-top: 10px;">
-        <button id="start-btn" class="btn btn-gold" onclick="startGame()">⚔️ 開始試煉</button>
-    </div>
+    <div id="tome-grid" class="tome-grid"></div>
+    <div style="margin-top: auto;"><button id="start-btn" class="btn btn-gold" onclick="startGame()">⚔️ 開始試煉</button></div>
 </div>
 
-<!-- 3. 拍照試煉頁面 -->
 <div id="page-collect" class="page">
     <div style="display:flex; justify-content: space-between;">
         <span id="progress-label" style="color:var(--m-gold); font-weight:bold;">1 / 10</span>
-        <button onclick="location.reload()" style="background:none; color:white; border:none; font-size:20px;">✕</button>
+        <button onclick="stopCameraAndHome()" style="background:none; color:white; border:none;">✕</button>
     </div>
-    <div class="magic-card" style="margin-top:15px;"><div class="target-word" id="target-word">...</div></div>
-    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
-    <button class="btn btn-gold" style="margin-top:20px;" onclick="document.getElementById('camera-input').click()">📸 拍攝照片</button>
+    <div class="magic-card"><div class="target-word" id="target-word">...</div></div>
+    
+    <div class="camera-container">
+        <video id="video" autoplay playsinline></video>
+        <div class="viewfinder"></div>
+    </div>
+    
+    <button class="btn btn-gold" style="margin-top:20px;" onclick="snap符文()">🔮 鎖定並捕獲符文</button>
+    
     <div id="preview-box" style="display:none; text-align:center; margin-top:5px;">
-        <img id="capture-preview" style="width:100px; border:2px solid var(--m-blue); border-radius:10px;">
-        <p style="color:var(--m-blue); font-size:12px;">符文已記錄</p>
+        <img id="capture-preview" style="width:120px; border:2px solid var(--m-blue); border-radius:5px;">
+        <p style="color:var(--m-blue); font-size:12px;">✅ 符文已鎖定</p>
     </div>
-    <button id="btn-next" class="btn btn-gold" style="margin-top:auto;" onclick="nextStep()">下一題</button>
+    <button id="btn-next" class="btn btn-outline" style="margin-top:auto;" onclick="nextStep()">下一步</button>
 </div>
 
-<!-- 4. 鑑定室頁面 -->
 <div id="page-review" class="page">
     <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定中心</h3>
     <div id="review-list" class="review-list"></div>
-    <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 AI 鑑定全部</button>
+    <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 AI 鑑定</button>
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="finishReview()">🔓 結算成果</button>
 </div>
 
-<!-- 5. 寶箱頁面 -->
 <div id="page-treasure" class="page">
     <h2 style="text-align: center; color: var(--m-gold);">🎁 藏寶室</h2>
-    <p id="treasure-hint" style="text-align: center;"></p>
     <div class="chest-container">
         <div class="chest shake" onclick="openChest(this)">📦</div>
         <div class="chest shake" onclick="openChest(this)">📦</div>
@@ -108,7 +126,6 @@
     </div>
     <div id="prize-reveal" style="display:none; text-align:center; margin-top:20px;">
         <h1 id="prize-name" style="color:var(--m-gold);">...</h1>
-        <p id="prize-sub"></p>
         <button class="btn btn-gold" onclick="showPage('page-home')">返回圖鑑</button>
     </div>
 </div>
@@ -116,47 +133,82 @@
 <canvas id="proc-canvas" style="display:none;"></canvas>
 
 <script>
-    // --- 全域變數 ---
     const defaultSpells = [
         {n: "火球術", t: "fire"}, {n: "冰晶陣", t: "ice"}, {n: "雷神怒", t: "light"}, {n: "風之翼", t: "wind"}, {n: "地動波", t: "earth"}, {n: "聖光盾", t: "shield"},
-        {n: "炎爆術", t: "fire"}, {n: "紅蓮業火", t: "fire"}, {n: "太陽射線", t: "fire"}, {n: "餘燼之握", t: "fire"}, {n: "絕對零度", t: "ice"}, {n: "極地風暴", t: "ice"},
-        {n: "連鎖閃電", t: "light"}, {n: "天罰之雷", t: "light"}, {n: "暴風之眼", t: "wind"}, {n: "疾風步", t: "wind"}, {n: "石化術", t: "earth"}, {n: "崩山裂地", t: "earth"},
-        {n: "聖域保護", t: "shield"}, {n: "神聖光輝", t: "light"}, {n: "天使之淚", t: "light"}, {n: "生命復甦", t: "light"}, {n: "荊棘叢生", t: "earth"}, {n: "萬象星隕", t: "fire"}
+        {n: "炎爆術", t: "fire"}, {n: "絕對零度", t: "ice"}, {n: "連鎖閃電", t: "light"}, {n: "疾風步", t: "wind"}, {n: "崩山裂地", t: "earth"}, {n: "淨化之光", t: "light"}
     ];
     const officialWords = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
         "小緁": ["傘", "烏雲", "天色暗", "爺爺", "猜字", "謎語", "撐開", "屋頂", "柺杖", "滴滴答答", "叩", "嘻嘻哈哈", "落下來", "大街", "答案", "園丁", "公園", "每天", "認真", "比", "遊客", "相當", "高興", "拍照", "草皮", "摘花", "立布告牌", "各位", "重新", "它", "欣賞", "奇妙"],
-        "小凱": ["測試", "符文", "力量", "成功"]
+        "小凱": ["測試", "符文", "力量"]
     };
 
     let currentUser = "", wordPool = [], mySpells = [], usedWords = [];
     let challenges = [], currentIdx = 0, workbook = [], maxChallenges = 10;
+    let stream = null;
 
-    // --- 核心導覽功能 ---
-    window.showPage = function(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        const target = document.getElementById(id);
-        if(target) target.classList.add('active');
-        if(id === 'page-home') renderHome();
+    // --- 核心：相機控制與方框裁剪 ---
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } 
+            });
+            document.getElementById('video').srcObject = stream;
+        } catch (e) { alert("無法開啟相機，請確保網址為 HTTPS 並允許相機權限。"); }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+    }
+
+    window.snap符文 = function() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('proc-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 計算裁剪區域 (方框在視訊中的相對位置)
+        // 假設 video 在 container 中 object-fit: cover
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        
+        // 鎖定中間 80% 寬度, 120px 比例的高度
+        const cropW = vw * 0.8;
+        const cropH = vh * 0.3; // 抓取中央較窄的橫條
+        const startX = (vw - cropW) / 2;
+        const startY = (vh - cropH) / 2;
+
+        canvas.width = cropW;
+        canvas.height = cropH;
+
+        ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, cropW, cropH);
+        
+        const photoData = canvas.toDataURL('image/jpeg', 0.9);
+        workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: photoData, status: null };
+        
+        document.getElementById('capture-preview').src = photoData;
+        document.getElementById('preview-box').style.display = 'block';
     };
 
+    // --- 其他邏輯保持優化 ---
     window.selectUser = function(name) {
-        console.log("Selecting user:", name);
         currentUser = name;
         maxChallenges = (name === '小凱') ? 2 : 10;
         document.getElementById('display-user').innerText = name;
-        
-        try {
-            mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
-            wordPool = officialWords[currentUser] || [];
-            usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
-        } catch(e) {
-            mySpells = []; wordPool = officialWords[currentUser]; usedWords = [];
-        }
+        mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
+        wordPool = officialWords[currentUser] || [];
+        usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
         showPage('page-home');
     };
 
-    // --- 頁面渲染 ---
+    window.showPage = function(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'page-home') renderHome();
+    };
+
     window.renderHome = function() {
         const grid = document.getElementById('tome-grid'); grid.innerHTML = '';
         defaultSpells.forEach(s => {
@@ -167,15 +219,11 @@
         });
         const stats = getDailyStats();
         document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3";
-        const startBtn = document.getElementById('start-btn');
-        if(stats.count >= 3) {
-            startBtn.disabled = true; startBtn.innerText = "今日魔力已盡";
-        } else {
-            startBtn.disabled = false; startBtn.innerText = `⚔️ 開始 ${maxChallenges} 階試煉`;
-        }
+        const btn = document.getElementById('start-btn');
+        btn.disabled = (stats.count >= 3);
+        btn.innerText = (stats.count >= 3) ? "魔力耗盡" : `⚔️ 開始 ${maxChallenges} 階試煉`;
     };
 
-    // --- 遊戲邏輯 ---
     window.startGame = function() {
         let pool = [...wordPool];
         let avail = pool.filter(w => !usedWords.includes(w));
@@ -185,38 +233,34 @@
         localStorage.setItem('m_used_' + currentUser, JSON.stringify(usedWords));
         currentIdx = 0; workbook = [];
         showPage('page-collect');
+        startCamera();
         updateUI();
     };
 
     function updateUI() {
         document.getElementById('progress-label').innerText = `${currentIdx+1} / ${maxChallenges}`;
         document.getElementById('target-word').innerText = challenges[currentIdx];
-        document.getElementById('preview-box').style.display = workbook[currentIdx] ? 'block' : 'none';
-        if(workbook[currentIdx]) document.getElementById('capture-preview').src = workbook[currentIdx].rawPhoto;
-        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "拍照完成" : "下一步";
+        document.getElementById('preview-box').style.display = 'none';
+        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "錄入完成" : "下一題";
     }
 
     window.nextStep = function() {
-        if(!workbook[currentIdx]) return alert("請先拍下符文");
+        if(!workbook[currentIdx]) return alert("請先鎖定符文");
         if(currentIdx < maxChallenges - 1) { currentIdx++; updateUI(); }
-        else { showPage('page-review'); renderReview(); }
+        else { stopCamera(); showPage('page-review'); renderReview(); }
     };
 
-    // --- 鑑定與 AI ---
     window.renderReview = function() {
         const list = document.getElementById('review-list'); list.innerHTML = '';
         workbook.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'review-item';
             let icon = item.status === true ? '✅' : (item.status === false ? '❌' : '⏳');
-            let btn = item.status === true ? 
-                `<button onclick="cancelManual(${i})" class="btn-mini" style="background:var(--m-red)">取消</button>` : 
-                `<button onclick="manual(${i})" class="btn-mini" style="background:#555">手動通過</button>`;
-            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btn}</div><div style="font-size:20px">${icon}</div>`;
+            let btn = item.status === true ? `<button onclick="cancelManual(${i})" class="btn-mini" style="background:var(--m-red)">取消</button>` : `<button onclick="manual(${i})" class="btn-mini" style="background:#555">通過</button>`;
+            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img" onclick="openZoom('${item.rawPhoto}')"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btn}</div><div style="font-size:20px">${icon}</div>`;
             list.appendChild(div);
         });
-        const allDone = workbook.every(i => i.status !== null);
-        document.getElementById('final-btn').style.display = allDone ? 'block' : 'none';
+        document.getElementById('final-btn').style.display = workbook.every(i => i.status !== null) ? 'block' : 'none';
     };
 
     window.manual = function(i) { workbook[i].status = true; renderReview(); };
@@ -224,84 +268,48 @@
 
     window.startAI = async function() {
         const loader = document.getElementById('loader');
-        const progressFill = document.getElementById('progress-fill');
-        const progressStatus = document.getElementById('progress-status');
         loader.style.display = 'flex';
         document.getElementById('btn-ai-start').style.display = 'none';
-        
         try {
             const worker = await Tesseract.createWorker('chi_tra');
             for(let i=0; i<workbook.length; i++){
-                progressFill.style.width = ((i + 1) / workbook.length * 100) + '%';
-                progressStatus.innerText = (i + 1) + " / " + workbook.length;
-                
-                const processed = await preprocess(workbook[i].rawPhoto);
-                const res = await worker.recognize(processed);
+                document.getElementById('progress-fill').style.width = ((i+1)/workbook.length*100)+'%';
+                const res = await worker.recognize(workbook[i].rawPhoto);
                 const txt = res.data.text.replace(/\s/g, '');
-                
                 let match = txt.includes(workbook[i].word);
                 if(!match){
-                    let c = 0;
-                    for(let char of workbook[i].word) if(txt.includes(char)) c++;
+                    let c = 0; for(let char of workbook[i].word) if(txt.includes(char)) c++;
                     match = (c/workbook[i].word.length) >= 0.6;
                 }
                 workbook[i].status = match;
                 renderReview();
             }
             await worker.terminate();
-        } catch (e) { alert("鑑定失敗"); }
+        } catch (e) { alert("辨識出錯"); }
         loader.style.display = 'none';
     };
 
-    async function preprocess(base64) {
-        return new Promise(resolve => {
-            const img = new Image();
-            img.onload = () => {
-                const cvs = document.getElementById('proc-canvas');
-                const ctx = cvs.getContext('2d');
-                const scale = 800 / img.width;
-                cvs.width = 800; cvs.height = img.height * scale;
-                ctx.drawImage(img, 0, 0, 800, cvs.height);
-                const data = ctx.getImageData(0,0,800,cvs.height);
-                for(let j=0; j<data.data.length; j+=4){
-                    const g = (data.data[j]+data.data[j+1]+data.data[j+2])/3;
-                    const v = g < 135 ? 0 : 255;
-                    data.data[j]=data.data[j+1]=data.data[j+2]=v;
-                }
-                ctx.putImageData(data,0,0);
-                resolve(cvs.toDataURL());
-            };
-            img.src = base64;
-        });
-    }
-
     window.finishReview = function() {
-        const score = workbook.filter(i => i.status === true).length;
-        document.getElementById('treasure-hint').innerText = `正確率：${score} / ${maxChallenges}`;
         showPage('page-treasure');
     };
 
     window.openChest = function(el) {
-        document.querySelectorAll('.chest').forEach(c => c.onclick = null);
         el.style.animation = "shake 0.5s 2";
         const score = workbook.filter(i => i.status === true).length;
         setTimeout(() => {
-            el.style.display = "none";
             document.querySelectorAll('.chest').forEach(c => c.style.opacity = "0");
             const reveal = document.getElementById('prize-reveal'); reveal.style.display = "block";
             if (score >= (maxChallenges * 0.8)) {
                 const ungot = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n));
                 const prize = ungot.length > 0 ? ungot[Math.floor(Math.random()*ungot.length)] : defaultSpells[0];
                 mySpells.push(prize);
-                localStorage.setItem('m_mine_' + currentUser, JSON.stringify(mySpells));
+                localStorage.setItem('m_mine_'+currentUser, JSON.stringify(mySpells));
                 const stats = getDailyStats(); stats.count++;
-                localStorage.setItem('m_daily_' + currentUser, JSON.stringify(stats));
+                localStorage.setItem('m_daily_'+currentUser, JSON.stringify(stats));
                 confetti({ particleCount: 150, spread: 70 });
-                document.getElementById('prize-name').innerText = `【${prize.n}】`;
-                document.getElementById('prize-sub').innerText = "🎊 習得新咒語！";
+                document.getElementById('prize-name').innerText = `獲得：${prize.n}`;
             } else {
-                document.getElementById('prize-name').innerText = "修煉不足";
-                document.getElementById('prize-sub').innerText = "再試一次吧！";
+                document.getElementById('prize-name').innerText = "修煉不足，未獲得卷軸";
             }
         }, 1000);
     };
@@ -312,25 +320,14 @@
         let stats = { date: today, count: 0 };
         try {
             const data = localStorage.getItem(key);
-            if(data) {
-                const p = JSON.parse(data);
-                if(p.date === today) stats = p;
-            }
+            if(data) { const p = JSON.parse(data); if(p.date === today) stats = p; }
         } catch(e) {}
         return stats;
     }
 
-    // --- 相機處理 ---
-    document.getElementById('camera-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: ev.target.result, status: null };
-            updateUI();
-        };
-        reader.readAsDataURL(file);
-    });
+    window.openZoom = function(s) { document.getElementById('zoomed-image').src = s; document.getElementById('photo-modal').style.display = 'flex'; };
+    window.closeZoom = function() { document.getElementById('photo-modal').style.display = 'none'; };
+    window.stopCameraAndHome = function() { stopCamera(); showPage('page-home'); };
 
 </script>
 </body>
