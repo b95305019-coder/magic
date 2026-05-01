@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師：符文試煉 V22</title>
+    <title>魔法大師 V23 - 穩定修復版</title>
     
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root { --m-purple: #1A1A2E; --m-gold: #FFD700; --m-blue: #00D2FF; --m-deep: #16213E; --m-red: #FF3B30; }
-        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; margin: 0; background: var(--m-purple); color: white; overflow-x: hidden; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; margin: 0; background: var(--m-purple); color: white; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         .page { display: none; padding: 20px; box-sizing: border-box; min-height: 100dvh; flex-direction: column; }
         .page.active { display: flex; }
 
         .wizard-icon { font-size: 70px; text-align: center; margin: 10px 0; filter: drop-shadow(0 0 15px var(--m-blue)); animation: float 3s ease-in-out infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 15px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
         .magic-card { background: #fdf5e6; color: #333; border-radius: 20px; padding: 30px 10px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); }
-        .target-word { font-size: 60px; font-weight: 900; letter-spacing: 8px; color: #222; margin: 10px 0; line-height: 1.2; }
+        .target-word { font-size: 60px; font-weight: 900; letter-spacing: 8px; color: #222; margin: 10px 0; }
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; overflow-y: auto; max-height: 35vh; padding: 5px; }
-        .scroll-icon { background: rgba(255,255,255,0.05); border: 1px solid var(--m-gold); border-radius: 8px; padding: 5px 2px; text-align: center; font-size: 9px; min-height: 55px; display: flex; flex-direction: column; justify-content: center; }
+        .scroll-icon { background: rgba(255,255,255,0.05); border: 1px solid var(--m-gold); border-radius: 8px; padding: 8px 2px; text-align: center; font-size: 9px; min-height: 55px; display: flex; flex-direction: column; justify-content: center; }
         
         .progress-container { width: 80%; background: #333; border-radius: 10px; height: 12px; margin: 15px 0; overflow: hidden; border: 1px solid var(--m-gold); }
         .progress-fill { width: 0%; background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; transition: width 0.4s ease; }
@@ -27,9 +27,9 @@
         .chest { font-size: 60px; cursor: pointer; transition: 0.3s; }
         .chest.shake { animation: shake 0.6s infinite; }
         
-        .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; }
+        .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; }
         .btn-gold { background: linear-gradient(45deg, var(--m-gold), #FFA500); color: black; }
-        .btn-outline { background: transparent; border: 1px solid white; color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--m-blue); color: white; }
 
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
         @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } }
@@ -37,61 +37,59 @@
         .review-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
         .review-item { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid var(--m-gold); }
-        .btn-mini { font-size: 10px; border: none; padding: 5px 10px; border-radius: 4px; color: white; cursor: pointer; }
-        .btn-pass { background: #555; }
-        .btn-undo { background: var(--m-red); }
+        .btn-mini { font-size: 10px; border: none; padding: 5px 10px; border-radius: 4px; color: white; }
     </style>
 </head>
 <body>
 
 <div id="loader" class="loader">
     <div style="border: 4px solid #333; border-top: 4px solid var(--m-gold); width: 40px; height: 40px; border-radius: 50%; animation: rotate 1s linear infinite;"></div>
-    <p id="loader-text" style="margin-top:15px; color:var(--m-gold); font-weight: bold;">鑑定中...</p>
+    <p id="loader-text" style="margin-top:15px; color:var(--m-gold); font-weight: bold;">正在施展鑑定咒語...</p>
     <div class="progress-container"><div id="progress-fill" class="progress-fill"></div></div>
     <p id="progress-status" style="font-size: 14px; color: #aaa;">0 / 10</p>
 </div>
 
-<!-- 登入頁 -->
+<!-- 1. 角色選擇頁面 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
     <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：角色登錄</h2>
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 25px;">
-        <button class="btn btn-outline" style="border-color: var(--m-blue);" onclick="selectUser('小緁')">🪄 魔法師：小緁</button>
-        <button class="btn btn-outline" style="border-color: var(--m-blue);" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</button>
-        <button class="btn btn-outline" style="border-color: var(--m-gold); color: var(--m-gold);" onclick="selectUser('小凱')">🛠️ 測試員：小凱</button>
+    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 30px;">
+        <div class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</div>
+        <div class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</div>
+        <div class="btn btn-outline" style="border-color: var(--m-gold); color: var(--m-gold);" onclick="selectUser('小凱')">🛠️ 測試員：小凱</div>
     </div>
 </div>
 
-<!-- 主頁面 -->
+<!-- 2. 圖鑑主頁面 -->
 <div id="page-home" class="page">
     <div style="display:flex; justify-content: space-between; align-items: center;">
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
         <button onclick="location.reload()" style="background:none; border:1px solid white; color:white; border-radius:5px; padding:2px 8px; font-size:11px;">登出</button>
     </div>
-    <div class="energy-bar">⚡ 今日剩餘領獎：<span id="daily-energy" style="font-weight:bold; color:var(--m-gold);">3 / 3</span></div>
+    <div class="energy-bar">⚡ 今日剩餘領獎：<span id="daily-energy">3 / 3</span></div>
     <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 15px; flex-grow: 1;"><div id="tome-grid" class="tome-grid"></div></div>
     <div style="margin-top: 10px;">
         <button id="start-btn" class="btn btn-gold" onclick="startGame()">⚔️ 開始試煉</button>
     </div>
 </div>
 
-<!-- 拍照階段 -->
+<!-- 3. 拍照試煉頁面 -->
 <div id="page-collect" class="page">
     <div style="display:flex; justify-content: space-between;">
-        <span id="progress-label" style="color:var(--m-gold); font-weight:bold;">試煉 1 / 10</span>
+        <span id="progress-label" style="color:var(--m-gold); font-weight:bold;">1 / 10</span>
         <button onclick="location.reload()" style="background:none; color:white; border:none; font-size:20px;">✕</button>
     </div>
     <div class="magic-card" style="margin-top:15px;"><div class="target-word" id="target-word">...</div></div>
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
-    <button class="btn btn-gold" style="margin-top:20px;" onclick="document.getElementById('camera-input').click()">📸 拍下符文</button>
+    <button class="btn btn-gold" style="margin-top:20px;" onclick="document.getElementById('camera-input').click()">📸 拍攝照片</button>
     <div id="preview-box" style="display:none; text-align:center; margin-top:5px;">
         <img id="capture-preview" style="width:100px; border:2px solid var(--m-blue); border-radius:10px;">
-        <p style="color:var(--m-blue); font-size:12px;">✨ 符文已記錄</p>
+        <p style="color:var(--m-blue); font-size:12px;">符文已記錄</p>
     </div>
     <button id="btn-next" class="btn btn-gold" style="margin-top:auto;" onclick="nextStep()">下一題</button>
 </div>
 
-<!-- 鑑定室 -->
+<!-- 4. 鑑定室頁面 -->
 <div id="page-review" class="page">
     <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定中心</h3>
     <div id="review-list" class="review-list"></div>
@@ -99,7 +97,7 @@
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="finishReview()">🔓 結算成果</button>
 </div>
 
-<!-- 寶箱頁面 -->
+<!-- 5. 寶箱頁面 -->
 <div id="page-treasure" class="page">
     <h2 style="text-align: center; color: var(--m-gold);">🎁 藏寶室</h2>
     <p id="treasure-hint" style="text-align: center;"></p>
@@ -118,60 +116,48 @@
 <canvas id="proc-canvas" style="display:none;"></canvas>
 
 <script>
+    // --- 全域變數 ---
     const defaultSpells = [
         {n: "火球術", t: "fire"}, {n: "冰晶陣", t: "ice"}, {n: "雷神怒", t: "light"}, {n: "風之翼", t: "wind"}, {n: "地動波", t: "earth"}, {n: "聖光盾", t: "shield"},
         {n: "炎爆術", t: "fire"}, {n: "紅蓮業火", t: "fire"}, {n: "太陽射線", t: "fire"}, {n: "餘燼之握", t: "fire"}, {n: "絕對零度", t: "ice"}, {n: "極地風暴", t: "ice"},
         {n: "連鎖閃電", t: "light"}, {n: "天罰之雷", t: "light"}, {n: "暴風之眼", t: "wind"}, {n: "疾風步", t: "wind"}, {n: "石化術", t: "earth"}, {n: "崩山裂地", t: "earth"},
-        {n: "聖域保護", t: "shield"}, {n: "神聖光輝", t: "light"}, {n: "天使之淚", t: "light"}, {n: "生命復甦", t: "light"}, {n: "荊棘叢生", t: "earth"}, {n: "萬象星隕", t: "fire"},
-        {n: "寒冬之怒", t: "ice"}, {n: "冰牆術", t: "ice"}, {n: "碎冰擊", t: "ice"}, {n: "雷鳴波", t: "light"}, {n: "磁力風暴", t: "light"}, {n: "閃電殘影", t: "light"},
-        {n: "旋風斬", t: "wind"}, {n: "真空裂縫", t: "wind"}, {n: "龍捲狂襲", t: "wind"}, {n: "裂空波", t: "wind"}, {n: "雲隱術", t: "wind"}, {n: "流沙領域", t: "earth"}, 
-        {n: "晶礦爆裂", t: "earth"}, {n: "重力壓制", t: "earth"}, {n: "鋼鐵意志", t: "earth"}, {n: "淨化之光", t: "light"}, {n: "奧義法球", t: "light"},
-        {n: "烈焰護盾", t: "fire"}, {n: "熔岩噴發", t: "fire"}, {n: "霜凍新星", t: "ice"}, {n: "霹靂一擊", t: "light"}, {n: "雷霆萬鈞", t: "light"}, {n: "聖潔之光", t: "light"},
-        {n: "幻影步", t: "wind"}, {n: "大地震擊", t: "earth"}, {n: "大地護佑", t: "earth"}
+        {n: "聖域保護", t: "shield"}, {n: "神聖光輝", t: "light"}, {n: "天使之淚", t: "light"}, {n: "生命復甦", t: "light"}, {n: "荊棘叢生", t: "earth"}, {n: "萬象星隕", t: "fire"}
     ];
-
     const officialWords = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
         "小緁": ["傘", "烏雲", "天色暗", "爺爺", "猜字", "謎語", "撐開", "屋頂", "柺杖", "滴滴答答", "叩", "嘻嘻哈哈", "落下來", "大街", "答案", "園丁", "公園", "每天", "認真", "比", "遊客", "相當", "高興", "拍照", "草皮", "摘花", "立布告牌", "各位", "重新", "它", "欣賞", "奇妙"],
-        "小凱": ["測試", "符文", "成功", "力量"]
+        "小凱": ["測試", "符文", "力量", "成功"]
     };
 
     let currentUser = "", wordPool = [], mySpells = [], usedWords = [];
     let challenges = [], currentIdx = 0, workbook = [], maxChallenges = 10;
 
-    function getDailyStats() {
-        if(!currentUser) return { count: 0 };
-        const today = new Date().toLocaleDateString();
-        const key = 'm_daily_' + currentUser;
-        let stats;
-        try {
-            stats = JSON.parse(localStorage.getItem(key)) || { date: today, count: 0 };
-        } catch(e) { stats = { date: today, count: 0 }; }
-        if (stats.date !== today) stats = { date: today, count: 0 };
-        return stats;
-    }
+    // --- 核心導覽功能 ---
+    window.showPage = function(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const target = document.getElementById(id);
+        if(target) target.classList.add('active');
+        if(id === 'page-home') renderHome();
+    };
 
-    function selectUser(name) {
+    window.selectUser = function(name) {
+        console.log("Selecting user:", name);
         currentUser = name;
         maxChallenges = (name === '小凱') ? 2 : 10;
         document.getElementById('display-user').innerText = name;
+        
         try {
             mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
             wordPool = officialWords[currentUser] || [];
             usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
         } catch(e) {
-            mySpells = []; usedWords = [];
+            mySpells = []; wordPool = officialWords[currentUser]; usedWords = [];
         }
         showPage('page-home');
-    }
+    };
 
-    function showPage(p) {
-        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-        document.getElementById(p).classList.add('active');
-        if(p === 'page-home') renderHome();
-    }
-
-    function renderHome() {
+    // --- 頁面渲染 ---
+    window.renderHome = function() {
         const grid = document.getElementById('tome-grid'); grid.innerHTML = '';
         defaultSpells.forEach(s => {
             const has = mySpells.find(m => m.n === s.n);
@@ -180,13 +166,17 @@
             div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div);
         });
         const stats = getDailyStats();
-        document.getElementById('daily-energy').innerText = `${3 - stats.count} / 3`;
-        document.getElementById('start-btn').disabled = (stats.count >= 3);
-        if(stats.count >= 3) document.getElementById('start-btn').innerText = "今日法力已盡";
-        else document.getElementById('start-btn').innerText = `⚔️ 開始 ${maxChallenges} 階試煉`;
-    }
+        document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3";
+        const startBtn = document.getElementById('start-btn');
+        if(stats.count >= 3) {
+            startBtn.disabled = true; startBtn.innerText = "今日魔力已盡";
+        } else {
+            startBtn.disabled = false; startBtn.innerText = `⚔️ 開始 ${maxChallenges} 階試煉`;
+        }
+    };
 
-    function startGame() {
+    // --- 遊戲邏輯 ---
+    window.startGame = function() {
         let pool = [...wordPool];
         let avail = pool.filter(w => !usedWords.includes(w));
         if (avail.length < maxChallenges) { usedWords = []; avail = pool; }
@@ -194,55 +184,45 @@
         usedWords = [...usedWords, ...challenges];
         localStorage.setItem('m_used_' + currentUser, JSON.stringify(usedWords));
         currentIdx = 0; workbook = [];
-        showPage('page-collect'); updateUI();
-    }
-
-    document.getElementById('camera-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: ev.target.result, status: null };
-            document.getElementById('capture-preview').src = ev.target.result;
-            document.getElementById('preview-box').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    });
+        showPage('page-collect');
+        updateUI();
+    };
 
     function updateUI() {
-        document.getElementById('progress-label').innerText = `試煉 ${currentIdx+1} / ${maxChallenges}`;
+        document.getElementById('progress-label').innerText = `${currentIdx+1} / ${maxChallenges}`;
         document.getElementById('target-word').innerText = challenges[currentIdx];
         document.getElementById('preview-box').style.display = workbook[currentIdx] ? 'block' : 'none';
         if(workbook[currentIdx]) document.getElementById('capture-preview').src = workbook[currentIdx].rawPhoto;
-        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "拍照完成" : "下一題";
+        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "拍照完成" : "下一步";
     }
 
-    function nextStep() {
-        if(!workbook[currentIdx]) return alert("請拍下符文");
+    window.nextStep = function() {
+        if(!workbook[currentIdx]) return alert("請先拍下符文");
         if(currentIdx < maxChallenges - 1) { currentIdx++; updateUI(); }
         else { showPage('page-review'); renderReview(); }
-    }
+    };
 
-    function renderReview() {
+    // --- 鑑定與 AI ---
+    window.renderReview = function() {
         const list = document.getElementById('review-list'); list.innerHTML = '';
         workbook.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'review-item';
             let icon = item.status === true ? '✅' : (item.status === false ? '❌' : '⏳');
-            let btnHtml = (item.status === true) ? 
-                `<button onclick="cancelManual(${i})" class="btn-mini btn-undo">✕ 取消</button>` : 
-                `<button onclick="manual(${i})" class="btn-mini btn-pass">手動通過</button>`;
-            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btnHtml}</div><div style="font-size:20px">${icon}</div>`;
+            let btn = item.status === true ? 
+                `<button onclick="cancelManual(${i})" class="btn-mini" style="background:var(--m-red)">取消</button>` : 
+                `<button onclick="manual(${i})" class="btn-mini" style="background:#555">手動通過</button>`;
+            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btn}</div><div style="font-size:20px">${icon}</div>`;
             list.appendChild(div);
         });
         const allDone = workbook.every(i => i.status !== null);
         document.getElementById('final-btn').style.display = allDone ? 'block' : 'none';
-    }
+    };
 
-    function manual(i) { workbook[i].status = true; renderReview(); }
-    function cancelManual(i) { workbook[i].status = false; renderReview(); }
+    window.manual = function(i) { workbook[i].status = true; renderReview(); };
+    window.cancelManual = function(i) { workbook[i].status = false; renderReview(); };
 
-    async function startAI() {
+    window.startAI = async function() {
         const loader = document.getElementById('loader');
         const progressFill = document.getElementById('progress-fill');
         const progressStatus = document.getElementById('progress-status');
@@ -253,33 +233,14 @@
             const worker = await Tesseract.createWorker('chi_tra');
             for(let i=0; i<workbook.length; i++){
                 progressFill.style.width = ((i + 1) / workbook.length * 100) + '%';
-                progressStatus.innerText = `${i + 1} / ${workbook.length}`;
+                progressStatus.innerText = (i + 1) + " / " + workbook.length;
                 
-                // 預處理
-                const processed = await new Promise(resolve => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.getElementById('proc-canvas');
-                        const ctx = canvas.getContext('2d');
-                        const scale = 800 / img.width;
-                        canvas.width = 800; canvas.height = img.height * scale;
-                        ctx.drawImage(img, 0, 0, 800, canvas.height);
-                        const imgData = ctx.getImageData(0,0,800,canvas.height);
-                        for(let j=0; j<imgData.data.length; j+=4) {
-                            const g = (imgData.data[j]+imgData.data[j+1]+imgData.data[j+2])/3;
-                            const v = g < 135 ? 0 : 255;
-                            imgData.data[j]=imgData.data[j+1]=imgData.data[j+2]=v;
-                        }
-                        ctx.putImageData(imgData,0,0);
-                        resolve(canvas.toDataURL());
-                    };
-                    img.src = workbook[i].rawPhoto;
-                });
-
+                const processed = await preprocess(workbook[i].rawPhoto);
                 const res = await worker.recognize(processed);
                 const txt = res.data.text.replace(/\s/g, '');
+                
                 let match = txt.includes(workbook[i].word);
-                if(!match) {
+                if(!match){
                     let c = 0;
                     for(let char of workbook[i].word) if(txt.includes(char)) c++;
                     match = (c/workbook[i].word.length) >= 0.6;
@@ -288,17 +249,39 @@
                 renderReview();
             }
             await worker.terminate();
-        } catch (e) { alert("鑑定錯誤"); }
+        } catch (e) { alert("鑑定失敗"); }
         loader.style.display = 'none';
+    };
+
+    async function preprocess(base64) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+                const cvs = document.getElementById('proc-canvas');
+                const ctx = cvs.getContext('2d');
+                const scale = 800 / img.width;
+                cvs.width = 800; cvs.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, 800, cvs.height);
+                const data = ctx.getImageData(0,0,800,cvs.height);
+                for(let j=0; j<data.data.length; j+=4){
+                    const g = (data.data[j]+data.data[j+1]+data.data[j+2])/3;
+                    const v = g < 135 ? 0 : 255;
+                    data.data[j]=data.data[j+1]=data.data[j+2]=v;
+                }
+                ctx.putImageData(data,0,0);
+                resolve(cvs.toDataURL());
+            };
+            img.src = base64;
+        });
     }
 
-    function finishReview() {
+    window.finishReview = function() {
         const score = workbook.filter(i => i.status === true).length;
-        document.getElementById('treasure-hint').innerText = `符文契合度：${score} / ${maxChallenges}`;
+        document.getElementById('treasure-hint').innerText = `正確率：${score} / ${maxChallenges}`;
         showPage('page-treasure');
-    }
+    };
 
-    function openChest(el) {
+    window.openChest = function(el) {
         document.querySelectorAll('.chest').forEach(c => c.onclick = null);
         el.style.animation = "shake 0.5s 2";
         const score = workbook.filter(i => i.status === true).length;
@@ -318,10 +301,37 @@
                 document.getElementById('prize-sub').innerText = "🎊 習得新咒語！";
             } else {
                 document.getElementById('prize-name').innerText = "修煉不足";
-                document.getElementById('prize-sub').innerText = "字跡太亂，無法喚醒咒語。";
+                document.getElementById('prize-sub').innerText = "再試一次吧！";
             }
         }, 1000);
+    };
+
+    function getDailyStats() {
+        const today = new Date().toLocaleDateString();
+        const key = 'm_daily_' + currentUser;
+        let stats = { date: today, count: 0 };
+        try {
+            const data = localStorage.getItem(key);
+            if(data) {
+                const p = JSON.parse(data);
+                if(p.date === today) stats = p;
+            }
+        } catch(e) {}
+        return stats;
     }
+
+    // --- 相機處理 ---
+    document.getElementById('camera-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: ev.target.result, status: null };
+            updateUI();
+        };
+        reader.readAsDataURL(file);
+    });
+
 </script>
 </body>
 </html>
