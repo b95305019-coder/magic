@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師：測試與試煉版</title>
+    <title>魔法大師：正式試煉 V21</title>
     
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -17,7 +17,7 @@
         .wizard-icon { font-size: 70px; text-align: center; margin: 10px 0; filter: drop-shadow(0 0 15px var(--m-blue)); animation: float 3s ease-in-out infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 15px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
         .magic-card { background: #fdf5e6; color: #333; border-radius: 20px; padding: 30px 10px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); }
-        .target-word { font-size: 70px; font-weight: 900; letter-spacing: 10px; color: #222; margin: 10px 0; }
+        .target-word { font-size: 60px; font-weight: 900; letter-spacing: 8px; color: #222; margin: 10px 0; line-height: 1.2; }
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; overflow-y: auto; max-height: 35vh; padding: 5px; }
         .scroll-icon { background: rgba(255,255,255,0.05); border: 1px solid var(--m-gold); border-radius: 8px; padding: 5px 2px; text-align: center; font-size: 9px; min-height: 55px; display: flex; flex-direction: column; justify-content: center; }
         
@@ -52,18 +52,18 @@
     <p id="progress-status" style="font-size: 14px; color: #aaa;">準備中</p>
 </div>
 
-<!-- 角色選擇頁面 -->
+<!-- 登入頁 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：魔法傳承</h2>
+    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：符文更新</h2>
     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 25px;">
-        <button class="btn btn-outline" style="border-color: var(--m-blue);" onclick="selectUser('小緁')">🪄 魔法師：小緁</button>
-        <button class="btn btn-outline" style="border-color: var(--m-blue);" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</button>
+        <button class="btn btn-outline" style="border-color: var(--m-blue);" onclick="selectUser('小緁')">🪄 魔法師：小緁 (32題庫)</button>
+        <button class="btn btn-outline" style="border-color: var(--m-blue);" onclick="selectUser('小鈞')">🪄 魔法師：小鈞 (14題庫)</button>
         <button class="btn btn-outline" style="border-color: var(--m-gold); color: var(--m-gold);" onclick="selectUser('小凱')">🛠️ 測試員：小凱 (2題模式)</button>
     </div>
 </div>
 
-<!-- 圖鑑主頁面 -->
+<!-- 主頁面 -->
 <div id="page-home" class="page">
     <div style="display:flex; justify-content: space-between; align-items: center;">
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
@@ -72,7 +72,7 @@
     <div class="energy-bar">⚡ 今日剩餘領獎：<span id="daily-energy" style="font-weight:bold; color:var(--m-gold);">3 / 3</span></div>
     <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 15px; flex-grow: 1;"><div id="tome-grid" class="tome-grid"></div></div>
     <div style="margin-top: 10px;">
-        <button id="start-btn" class="btn btn-gold" onclick="startGame()">⚔️ 開始試煉挑戰</button>
+        <button id="start-btn" class="btn btn-gold" onclick="startGame()">⚔️ 開始試煉</button>
     </div>
 </div>
 
@@ -100,7 +100,7 @@
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="finishReview()">🔓 結算成果</button>
 </div>
 
-<!-- 寶箱頁面 -->
+<!-- 寶箱 -->
 <div id="page-treasure" class="page">
     <h2 style="text-align: center; color: var(--m-gold);">🎁 藏寶室</h2>
     <p id="treasure-hint" style="text-align: center;"></p>
@@ -123,13 +123,18 @@
         {n: "火球術", t: "fire"}, {n: "冰晶陣", t: "ice"}, {n: "雷神怒", t: "light"}, {n: "風之翼", t: "wind"}, {n: "地動波", t: "earth"}, {n: "聖光盾", t: "shield"},
         {n: "炎爆術", t: "fire"}, {n: "紅蓮業火", t: "fire"}, {n: "太陽射線", t: "fire"}, {n: "餘燼之握", t: "fire"}, {n: "絕對零度", t: "ice"}, {n: "極地風暴", t: "ice"},
         {n: "連鎖閃電", t: "light"}, {n: "天罰之雷", t: "light"}, {n: "暴風之眼", t: "wind"}, {n: "疾風步", t: "wind"}, {n: "石化術", t: "earth"}, {n: "崩山裂地", t: "earth"},
-        {n: "聖域保護", t: "shield"}, {n: "神聖光輝", t: "light"}, {n: "天使之淚", t: "light"}, {n: "生命復甦", t: "light"}, {n: "荊棘叢生", t: "earth"}, {n: "萬象星隕", t: "fire"}
+        {n: "聖域保護", t: "shield"}, {n: "神聖光輝", t: "light"}, {n: "天使之淚", t: "light"}, {n: "生命復甦", t: "light"}, {n: "荊棘叢生", t: "earth"}, {n: "萬象星隕", t: "fire"},
+        {n: "寒冬之怒", t: "ice"}, {n: "冰牆術", t: "ice"}, {n: "碎冰擊", t: "ice"}, {n: "雷鳴波", t: "light"}, {n: "磁力風暴", t: "light"}, {n: "閃電殘影", t: "light"},
+        {n: "旋風斬", t: "wind"}, {n: "真空裂縫", t: "wind"}, {n: "龍捲狂襲", t: "wind"}, {n: "裂空波", t: "wind"}, {n: "雲隱術", t: "wind"}, {n: "流沙領域", t: "earth"}, 
+        {n: "晶礦爆裂", t: "earth"}, {n: "重力壓制", t: "earth"}, {n: "鋼鐵意志", t: "earth"}, {n: "淨化之光", t: "light"}, {n: "奧義法球", t: "light"},
+        {n: "烈焰護盾", t: "fire"}, {n: "熔岩噴發", t: "fire"}, {n: "霜凍新星", t: "ice"}, {n: "霹靂一擊", t: "light"}, {n: "雷霆萬鈞", t: "light"}, {n: "聖潔之光", t: "light"},
+        {n: "幻影步", t: "wind"}, {n: "大地震擊", t: "earth"}, {n: "大地護佑", t: "earth"}
     ];
 
     const officialWords = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
-        "小緁": ["傘", "烏雲", "天色暗", "爺爺", "猜字", "謎語", "撐開", "屋頂", "柺杖", "滴滴答答", "叩", "嘻嘻哈哈", "落下來", "大街", "答案"],
-        "小凱": ["測試", "符文", "力量", "成功", "魔法"] // 小凱測試用題庫
+        "小緁": ["傘", "烏雲", "天色暗", "爺爺", "猜字", "謎語", "撐開", "屋頂", "柺杖", "滴滴答答", "叩", "嘻嘻哈哈", "落下來", "大街", "答案", "園丁", "公園", "每天", "認真", "比", "遊客", "相當", "高興", "拍照", "草皮", "摘花", "立布告牌", "各位", "重新", "它", "欣賞", "奇妙"],
+        "小凱": ["測試", "符文", "力量", "成功", "魔法"]
     };
 
     let currentUser = "", wordPool = [], mySpells = [], usedWords = [];
@@ -140,189 +145,4 @@
             const img = new Image();
             img.onload = () => {
                 const canvas = document.getElementById('proc-canvas');
-                const ctx = canvas.getContext('2d');
-                const scale = 800 / img.width;
-                canvas.width = 800; canvas.height = img.height * scale;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imgData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-                    const val = avg < 135 ? 0 : 255; 
-                    data[i] = data[i+1] = data[i+2] = val;
-                }
-                ctx.putImageData(imgData, 0, 0);
-                resolve(canvas.toDataURL('image/jpeg', 0.8));
-            };
-            img.src = base64;
-        });
-    }
-
-    function fuzzyCheck(target, detected) {
-        if (!detected) return false;
-        const cleanDetected = detected.replace(/[^\u4e00-\u9fa5]/g, '');
-        if (cleanDetected.includes(target)) return true;
-        let matchCount = 0;
-        for (let char of target) { if (cleanDetected.includes(char)) matchCount++; }
-        return (matchCount / target.length) >= 0.6;
-    }
-
-    function selectUser(name) {
-        currentUser = name;
-        // 小凱題數為 2，其餘為 10
-        maxChallenges = (name === '小凱') ? 2 : 10;
-        document.getElementById('display-user').innerText = name;
-        mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
-        wordPool = JSON.parse(localStorage.getItem('m_words_' + currentUser)) || officialWords[currentUser];
-        usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
-        showPage('page-home');
-    }
-
-    function showPage(p) {
-        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-        document.getElementById(p).classList.add('active');
-        if(p === 'page-home') renderHome();
-    }
-
-    function renderHome() {
-        const grid = document.getElementById('tome-grid'); grid.innerHTML = '';
-        defaultSpells.forEach(s => {
-            const has = mySpells.find(m => m.n === s.n);
-            const div = document.createElement('div');
-            div.className = 'scroll-icon'; div.style.opacity = has ? "1" : "0.2";
-            div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div);
-        });
-        const stats = getDailyStats();
-        document.getElementById('daily-energy').innerText = `${3 - stats.count} / 3`;
-        document.getElementById('start-btn').disabled = (stats.count >= 3);
-        if(stats.count >= 3) document.getElementById('start-btn').innerText = "今日魔力已盡";
-        else document.getElementById('start-btn').innerText = `⚔️ 開始 ${maxChallenges} 階試煉`;
-    }
-
-    function startGame() {
-        if(wordPool.length < maxChallenges) {
-            // 如果是測試帳號題庫不夠，則清空使用紀錄
-            usedWords = [];
-            localStorage.setItem('m_used_' + currentUser, "[]");
-        }
-        let pool = [...wordPool];
-        let avail = pool.filter(w => !usedWords.includes(w));
-        if (avail.length < maxChallenges) { usedWords = []; avail = pool; }
-        challenges = avail.sort(() => 0.5 - Math.random()).slice(0, maxChallenges);
-        usedWords = [...usedWords, ...challenges];
-        localStorage.setItem('m_used_' + currentUser, JSON.stringify(usedWords));
-        currentIdx = 0; workbook = [];
-        showPage('page-collect'); updateUI();
-    }
-
-    document.getElementById('camera-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: ev.target.result, status: null };
-            document.getElementById('capture-preview').src = ev.target.result;
-            document.getElementById('preview-box').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    });
-
-    function updateUI() {
-        document.getElementById('progress-label').innerText = `試煉 ${currentIdx+1} / ${maxChallenges}`;
-        document.getElementById('target-word').innerText = challenges[currentIdx];
-        document.getElementById('preview-box').style.display = workbook[currentIdx] ? 'block' : 'none';
-        if(workbook[currentIdx]) document.getElementById('capture-preview').src = workbook[currentIdx].rawPhoto;
-        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "拍照完成，前往鑑定" : "下一題";
-    }
-
-    function nextStep() {
-        if(!workbook[currentIdx]) return alert("請拍下符文");
-        if(currentIdx < maxChallenges - 1) { currentIdx++; updateUI(); }
-        else { showPage('page-review'); renderReview(); }
-    }
-
-    function renderReview() {
-        const list = document.getElementById('review-list'); list.innerHTML = '';
-        workbook.forEach((item, i) => {
-            const div = document.createElement('div');
-            div.className = 'review-item';
-            let icon = item.status === true ? '✅' : (item.status === false ? '❌' : '⏳');
-            let btnHtml = (item.status === true) ? 
-                `<button onclick="cancelManual(${i})" class="btn-mini btn-undo">✕ 取消</button>` : 
-                `<button onclick="manual(${i})" class="btn-mini btn-pass">手動通過</button>`;
-
-            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btnHtml}</div><div style="font-size:20px">${icon}</div>`;
-            list.appendChild(div);
-        });
-        if(workbook.every(i => i.status !== null)) document.getElementById('final-btn').style.display = 'block';
-    }
-
-    function manual(i) { workbook[i].status = true; renderReview(); }
-    function cancelManual(i) { workbook[i].status = false; renderReview(); }
-
-    async function startAI() {
-        const loader = document.getElementById('loader');
-        const progressFill = document.getElementById('progress-fill');
-        const progressStatus = document.getElementById('progress-status');
-        loader.style.display = 'flex';
-        document.getElementById('btn-ai-start').style.display = 'none';
-        
-        try {
-            const worker = await Tesseract.createWorker('chi_tra');
-            for(let i=0; i<workbook.length; i++){
-                progressFill.style.width = ((i + 1) / workbook.length * 100) + '%';
-                progressStatus.innerText = `鑑定中：${i + 1} / ${workbook.length}`;
-                const processedPhoto = await preprocessImage(workbook[i].rawPhoto);
-                const res = await worker.recognize(processedPhoto);
-                const txt = res.data.text.replace(/\s/g, '');
-                workbook[i].status = fuzzyCheck(workbook[i].word, txt);
-                renderReview();
-            }
-            await worker.terminate();
-        } catch (e) { alert("鑑定中斷"); }
-        loader.style.display = 'none';
-    }
-
-    function finishReview() {
-        const score = workbook.filter(i => i.status === true).length;
-        document.getElementById('treasure-hint').innerText = `符文契合度：${score} / ${maxChallenges}`;
-        showPage('page-treasure');
-    }
-
-    function openChest(el) {
-        document.querySelectorAll('.chest').forEach(c => c.onclick = null);
-        el.style.animation = "shake 0.5s 2";
-        const score = workbook.filter(i => i.status === true).length;
-        const passScore = maxChallenges * 0.8; // 80% 門檻
-
-        setTimeout(() => {
-            el.style.display = "none";
-            document.querySelectorAll('.chest').forEach(c => c.style.opacity = "0");
-            const reveal = document.getElementById('prize-reveal'); reveal.style.display = "block";
-            if (score >= passScore) {
-                const ungot = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n));
-                const prize = ungot.length > 0 ? ungot[Math.floor(Math.random()*ungot.length)] : defaultSpells[0];
-                mySpells.push(prize);
-                localStorage.setItem('m_mine_' + currentUser, JSON.stringify(mySpells));
-                const stats = getDailyStats(); stats.count += 1;
-                localStorage.setItem('m_daily_' + currentUser, JSON.stringify(stats));
-                confetti({ particleCount: 150, spread: 70 });
-                document.getElementById('prize-name').innerText = `【${prize.n}】`;
-                document.getElementById('prize-sub').innerText = "🎊 恭喜學會了新咒語！";
-            } else {
-                document.getElementById('prize-name').innerText = "修煉尚未達標";
-                document.getElementById('prize-sub').innerText = `需達 ${Math.ceil(passScore)} 題正確，請再接再厲！`;
-            }
-        }, 1000);
-    }
-
-    function getDailyStats() {
-        const today = new Date().toLocaleDateString();
-        const key = 'm_daily_' + currentUser;
-        let stats = JSON.parse(localStorage.getItem(key)) || { date: today, count: 0 };
-        if (stats.date !== today) stats = { date: today, count: 0 };
-        return stats;
-    }
-</script>
-</body>
-</html>
+                const ctx = canvas.getContext('
