@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V30 - 聽寫試煉版</title>
+    <title>魔法大師 V31 - 特效與放大強化版</title>
     
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -14,19 +14,43 @@
         .page { display: none; padding: 20px; box-sizing: border-box; min-height: 100dvh; flex-direction: column; }
         .page.active { display: flex; }
 
-        /* 介面樣式 */
         .wizard-icon { font-size: 70px; text-align: center; margin: 10px 0; filter: drop-shadow(0 0 15px var(--m-blue)); animation: float 3s ease-in-out infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 15px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
         .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; }
         
-        /* 聽寫模式專用樣式 */
-        .target-word-hidden { font-size: 80px; color: rgba(0,0,0,0.1); margin: 10px 0; cursor: pointer; }
-        .speaker-btn { font-size: 90px; margin: 10px 0; cursor: pointer; display: block; animation: pulse 2s infinite; }
+        .speaker-btn { font-size: 80px; margin: 10px 0; cursor: pointer; display: block; animation: pulse 2s infinite; }
         
         /* 圖鑑 */
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
         .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .scroll-icon b { margin-top: 5px; color: var(--m-gold); display: block; width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+
+        /* 鑑定室列表 */
+        .review-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .preview-img { width: 80px; height: 50px; object-fit: contain; background: #fff; border-radius: 5px; border: 2px solid var(--m-gold); cursor: zoom-in; }
+
+        /* 照片放大視窗 (Lightbox) */
+        #zoom-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index: 9999; display:none; align-items:center; justify-content:center; }
+        #zoom-modal img { max-width: 95%; max-height: 85%; border: 3px solid white; border-radius: 10px; }
+
+        /* 特效層 */
+        #effect-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .magic-visual { width: 250px; height: 250px; border-radius: 50%; opacity: 0; transition: 0.3s; border: 10px double var(--m-gold); }
+        
+        /* 魔法特效動畫清單 */
+        .fx-fire { animation: fire-anim 1.5s forwards; border-color: #FF4500; box-shadow: 0 0 50px #FF4500; }
+        .fx-ice { animation: ice-anim 1.5s forwards; border-color: #00D2FF; box-shadow: 0 0 50px #00D2FF; }
+        .fx-light { animation: light-anim 1.5s forwards; border-color: #FFFF00; box-shadow: 0 0 80px #FFFF00; }
+        .fx-wind { animation: wind-anim 1.5s forwards; border-color: #00FF7F; border-style: dashed; }
+        .fx-earth { animation: earth-anim 1.5s forwards; border-color: #8B4513; border-radius: 20%; }
+        .fx-shield { animation: shield-anim 1.5s forwards; border-color: #FFFFFF; background: rgba(255,255,255,0.1); }
+
+        @keyframes fire-anim { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+        @keyframes ice-anim { 0% { transform: scale(2); opacity: 0; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.2); opacity: 0; } }
+        @keyframes light-anim { 0% { opacity: 0; } 20% { opacity: 1; } 40% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes wind-anim { 0% { transform: rotate(0deg) scale(0.5); opacity: 1; } 100% { transform: rotate(720deg) scale(2); opacity: 0; } }
+        @keyframes earth-anim { 0% { transform: translateY(0); opacity: 1; } 25% { transform: translateY(10px); } 75% { transform: translateY(-10px); } 100% { transform: scale(1.5); opacity: 0; } }
+        @keyframes shield-anim { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 
         .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; box-sizing: border-box; }
         .btn-gold { background: linear-gradient(45deg, var(--m-gold), #FFA500); color: black; }
@@ -35,15 +59,18 @@
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
         @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } }
-        
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .review-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
-        .preview-img { width: 80px; height: 50px; object-fit: contain; background: #fff; border-radius: 5px; border: 1px solid var(--m-gold); }
         .detail-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 7000; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .scroll-full { background: #e3d5b8; width: 100%; max-width: 320px; padding: 40px 20px; border-radius: 5px; border-left: 15px solid #8b4513; border-right: 15px solid #8b4513; color: #333; text-align: center; position: relative; }
     </style>
 </head>
 <body>
+
+<!-- 照片放大燈箱 -->
+<div id="zoom-modal" onclick="this.style.display='none'">
+    <img id="zoom-img" src="">
+    <p style="position: absolute; bottom: 30px; color: white;">點擊任意處關閉</p>
+</div>
 
 <!-- 卷軸詳情 -->
 <div id="detail-modal" class="detail-modal" onclick="closeDetail()">
@@ -61,10 +88,9 @@
     <div style="width:80%; height:10px; background:#333; border-radius:5px; margin-top:10px; overflow:hidden; border:1px solid var(--m-gold);"><div id="progress-fill" style="width:0%; height:100%; background:var(--m-gold); transition:0.3s;"></div></div>
 </div>
 
-<!-- 登錄 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：聽寫試煉</h2>
+    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：大魔法師</h2>
     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 30px;">
         <div class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</div>
         <div class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</div>
@@ -72,54 +98,47 @@
     </div>
 </div>
 
-<!-- 主頁面 -->
 <div id="page-home" class="page">
     <div style="display:flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
         <button onclick="location.reload()" style="background:none; border:1px solid white; color:white; border-radius:5px; padding:2px 8px; font-size:11px;">登出</button>
     </div>
-    <div class="energy-bar">⚡ 今日剩餘領獎：<span id="daily-energy">3 / 3</span></div>
+    <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span></div>
     <div id="tome-grid" class="tome-grid"></div>
     <div style="margin-top: 15px;"><button id="start-btn" class="btn btn-gold" onclick="startGame()">⚔️ 開始聽寫試煉</button></div>
 </div>
 
-<!-- 拍照（聽寫模式） -->
 <div id="page-collect" class="page">
     <div style="display:flex; justify-content: space-between;">
         <span id="progress-label" style="color:var(--m-gold); font-weight:bold;">1 / 10</span>
         <button onclick="stopCameraAndHome()" style="background:none; color:white; border:none; font-size:20px;">✕</button>
     </div>
-    
-    <!-- 聽寫核心：隱藏生字，顯示喇叭 -->
     <div class="magic-card" style="margin-top:10px;">
-        <p style="margin:0; color:#888;">聽聽看，這是什麼符文？</p>
+        <p style="margin:0; color:#888;">聽聽符文之音</p>
         <div class="speaker-btn" onclick="speakCurrentWord()">🔊</div>
         <div id="target-word" style="display:none;">...</div>
     </div>
-
     <div class="camera-container" style="position: relative; width: 100%; height: 260px; background: #000; border-radius: 20px; overflow: hidden; margin-top: 15px; border: 2px solid var(--m-blue);">
         <video id="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
         <div class="viewfinder" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 90px; border: 3px solid var(--m-gold); border-radius: 10px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none;"></div>
     </div>
-    <button class="btn btn-gold" style="margin-top:15px;" onclick="snap符文()">🔮 鎖定並錄入符文</button>
+    <button class="btn btn-gold" style="margin-top:15px;" onclick="snap符文()">🔮 鎖定並錄入</button>
     <div id="preview-box" style="display:none; text-align:center; margin-top:5px;">
-        <img id="capture-preview" style="width:100px; border:2px solid var(--m-blue); border-radius:5px;">
-        <p style="color:var(--m-blue); font-size:12px;">✅ 符文已錄入</p>
+        <img id="capture-preview" style="width:120px; border:2px solid var(--m-blue); border-radius:5px;">
+        <p style="color:var(--m-blue); font-size:12px;">✅ 已記錄</p>
     </div>
     <button id="btn-next" class="btn btn-outline" style="margin-top:auto;" onclick="nextStep()">下一題</button>
 </div>
 
-<!-- 鑑定 -->
 <div id="page-review" class="page">
-    <h3 style="text-align: center; color: var(--m-gold);">🔍 聽寫鑑定中</h3>
+    <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定中心</h3>
     <div id="review-list" class="review-list" style="flex-grow: 1; overflow-y: auto;"></div>
     <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 AI 鑑定全部</button>
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="finishReview()">🔓 結算成果</button>
 </div>
 
-<!-- 寶箱 -->
 <div id="page-treasure" class="page">
-    <h2 style="text-align: center; color: var(--m-gold);">🎁 命運藏寶室</h2>
+    <h2 style="text-align: center; color: var(--m-gold);">🎁 藏寶室</h2>
     <div id="chest-zone" style="display: flex; justify-content: space-around; margin-top: 40px;">
         <div class="chest shake" style="font-size: 60px; cursor: pointer;" onclick="openChest(this)">📦</div>
         <div class="chest shake" style="font-size: 60px; cursor: pointer;" onclick="openChest(this)">📦</div>
@@ -132,7 +151,7 @@
 </div>
 
 <div id="effect-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9000; display: flex; align-items: center; justify-content: center;">
-    <div id="magic-visual" style="width: 250px; height: 250px; border-radius: 50%; opacity: 0; transition: 0.5s; border: 8px double var(--m-gold);"></div>
+    <div id="magic-visual" class="magic-visual"></div>
 </div>
 
 <canvas id="proc-canvas" style="display:none;"></canvas>
@@ -142,13 +161,7 @@
         {n: "火球術", t: "fire"}, {n: "冰晶陣", t: "ice"}, {n: "雷神怒", t: "light"}, {n: "風之翼", t: "wind"}, {n: "地動波", t: "earth"}, {n: "聖光盾", t: "shield"},
         {n: "炎爆術", t: "fire"}, {n: "絕對零度", t: "ice"}, {n: "連鎖閃電", t: "light"}, {n: "疾風步", t: "wind"}, {n: "崩山裂地", t: "earth"}, {n: "淨化之光", t: "light"},
         {n: "餘燼之握", t: "fire"}, {n: "極地風暴", t: "ice"}, {n: "聖域保護", t: "shield"}, {n: "萬象星隕", t: "fire"}, {n: "寒冬之怒", t: "ice"},
-        {n: "霹靂一擊", t: "light"}, {n: "龍捲狂襲", t: "wind"}, {n: "金石之軀", t: "earth"}, {n: "太陽射線", t: "fire"}, {n: "霜凍新星", t: "ice"},
-        {n: "雷霆萬鈞", t: "light"}, {n: "雲隱術", t: "wind"}, {n: "流沙領域", t: "earth"}, {n: "天使之淚", t: "light"}, {n: "鳳凰涅槃", t: "fire"},
-        {n: "冰牆術", t: "ice"}, {n: "電光火石", t: "light"}, {n: "疾風之怒", t: "wind"}, {n: "地裂震波", t: "earth"}, {n: "聖潔光輝", t: "shield"},
-        {n: "紅蓮業火", t: "fire"}, {n: "碎冰擊", t: "ice"}, {n: "閃電殘影", t: "light"}, {n: "真空裂縫", t: "wind"}, {n: "重力壓制", t: "earth"},
-        {n: "生命復甦", t: "light"}, {n: "餘燼風暴", t: "fire"}, {n: "極地冰柱", t: "ice"}, {n: "雷鳴爆破", t: "light"}, {n: "裂空斬", t: "wind"},
-        {n: "晶礦爆裂", t: "earth"}, {n: "奧義法球", t: "light"}, {n: "熔岩噴發", t: "fire"}, {n: "寒冰箭", t: "ice"}, {n: "磁力風暴", t: "light"},
-        {n: "暴風之眼", t: "wind"}, {n: "鋼鐵意志", t: "earth"}, {n: "荊棘叢生", t: "earth"}
+        {n: "霹靂一擊", t: "light"}, {n: "龍捲狂襲", t: "wind"}, {n: "金石之軀", t: "earth"}, {n: "太陽射線", t: "fire"}, {n: "霜凍新星", t: "ice"}
     ];
     const officialWords = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
@@ -158,21 +171,33 @@
 
     let currentUser = "", wordPool = [], mySpells = [], usedWords = [], currentIdx = 0, workbook = [], maxChallenges = 10, stream = null, chestLocked = false;
 
-    // --- 語音功能 ---
+    // --- 核心：魔法特效功能 ---
+    window.castMagic = function(type) {
+        const visual = document.getElementById('magic-visual');
+        visual.className = 'magic-visual'; // 重置
+        void visual.offsetWidth; // 強制重繪
+        visual.classList.add('fx-' + type);
+        visual.style.opacity = "1";
+        setTimeout(() => { visual.style.opacity = "0"; }, 1500);
+    };
+
+    // --- 核心：照片放大功能 ---
+    window.openZoom = function(src) {
+        document.getElementById('zoom-img').src = src;
+        document.getElementById('zoom-modal').style.display = 'flex';
+    };
+
+    // --- 語音 ---
     window.speakWord = function(text) {
         if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel(); // 停止之前的聲音
+        window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'zh-TW';
-        msg.rate = 0.8; // 唸慢一點方便聽寫
+        msg.lang = 'zh-TW'; msg.rate = 0.8;
         window.speechSynthesis.speak(msg);
     };
+    window.speakCurrentWord = function() { if (challenges[currentIdx]) speakWord(challenges[currentIdx]); };
 
-    window.speakCurrentWord = function() {
-        if (challenges[currentIdx]) speakWord(challenges[currentIdx]);
-    };
-
-    // --- 玩家選擇與導覽 ---
+    // --- 導覽 ---
     window.selectUser = function(name) {
         currentUser = name;
         maxChallenges = (name === '小凱') ? 2 : 10;
@@ -214,7 +239,7 @@
     };
     window.closeDetail = function() { document.getElementById('detail-modal').style.display = 'none'; };
 
-    // --- 相機控制 ---
+    // --- 相機 ---
     async function startCamera() {
         try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 1280 } }); document.getElementById('video').srcObject = stream; } 
         catch (e) { alert("相機授權失敗"); }
@@ -246,8 +271,7 @@
         document.getElementById('progress-label').innerText = `${currentIdx+1} / ${maxChallenges}`;
         document.getElementById('target-word').innerText = challenges[currentIdx];
         document.getElementById('preview-box').style.display = 'none';
-        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "拍照完成" : "下一題";
-        // 核心更新：自動唸出生字
+        document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "錄入完成" : "下一題";
         setTimeout(() => speakCurrentWord(), 500);
     }
 
@@ -263,7 +287,7 @@
             const div = document.createElement('div'); div.className = 'review-item';
             let icon = item.status === true ? '✅' : (item.status === false ? '❌' : '⏳');
             let btn = item.status === true ? `<button onclick="manual(${i}, false)" class="btn-mini" style="background:var(--m-red)">取消</button>` : `<button onclick="manual(${i}, true)" class="btn-mini" style="background:#555">通過</button>`;
-            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img" onclick="window.open(this.src)"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btn}</div><div style="font-size:20px">${icon}</div>`;
+            div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img" onclick="window.openZoom(this.src)"><div style="flex:1; font-size:12px;"><b>${item.word}</b><br>${btn}</div><div style="font-size:20px">${icon}</div>`;
             list.appendChild(div);
         });
         document.getElementById('final-btn').style.display = workbook.every(i => i.status !== null) ? 'block' : 'none';
@@ -289,7 +313,7 @@
                 workbook[i].status = match; renderReview();
             }
             await worker.terminate();
-        } catch (e) { alert("辨識錯誤"); }
+        } catch (e) { alert("鑑定錯誤"); }
         document.getElementById('loader').style.display = 'none';
     };
 
@@ -324,7 +348,6 @@
         el.style.animation = "shake 0.5s 2";
         const score = workbook.filter(i => i.status === true).length;
         const stats = getDailyStats();
-
         setTimeout(() => {
             document.getElementById('chest-zone').style.display = 'none';
             const reveal = document.getElementById('prize-reveal'); reveal.style.display = "block";
@@ -349,12 +372,6 @@
         return stats;
     }
 
-    function castMagic(type) {
-        const visual = document.getElementById('magic-visual'); visual.style.opacity = "1";
-        let color = "#FFD700"; if(type === 'fire') color = "#FF4500"; if(type === 'ice') color = "#00D2FF";
-        visual.style.borderColor = color; visual.style.boxShadow = `0 0 40px ${color}`;
-        setTimeout(() => visual.style.opacity = "0", 1500);
-    }
     window.stopCameraAndHome = function() { if(stream) stream.getTracks().forEach(t=>t.stop()); showPage('page-home'); };
 </script>
 </body>
