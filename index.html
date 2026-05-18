@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V47 - 診斷強化版</title>
+    <title>魔法大師 V48 - 雲端路徑修復版</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --m-purple: #1A1A2E; --m-gold: #FFD700; --m-blue: #00D2FF; --m-deep: #16213E; --m-red: #FF3B30; --m-parchment: #fdf5e6; }
@@ -30,18 +30,18 @@
 
 <div id="loader" class="loader">
     <div style="border: 4px solid #333; border-top: 4px solid var(--m-gold); width: 40px; height: 40px; border-radius: 50%; animation: rotate 1s linear infinite;"></div>
-    <p style="margin-top:15px; color:var(--m-gold); font-weight: bold;">正在連線雲端大腦鑑定...</p>
+    <p style="margin-top:15px; color:var(--m-gold); font-weight: bold;">正在連線正式版雲端大腦...</p>
     <div class="progress-bar"><div id="progress-fill" style="width:0%; height:100%; background:var(--m-gold); transition:0.3s;"></div></div>
     <p id="progress-status" style="font-size: 14px; color: #aaa;">0 / 10</p>
 </div>
 
-<!-- 1. 角色與金鑰 -->
+<!-- 1. 角色選單 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold);">真理之書 V47</h2>
+    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書 V48</h2>
     <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin-bottom:20px;">
-        <p style="font-size:12px; margin:0;">🔑 請貼上 Gemini API 金鑰</p>
-        <input type="text" id="api-key-input" placeholder="AIza 開頭的金鑰..." style="width:100%; padding:12px; border-radius:8px; border:none; margin:10px 0; box-sizing:border-box;">
+        <p style="font-size:12px; margin:0;">🔑 貼上 Gemini API 金鑰：</p>
+        <input type="text" id="api-key-input" placeholder="AIza..." style="width:100%; padding:12px; border-radius:8px; border:none; margin:10px 0; box-sizing:border-box;">
     </div>
     <button class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</button>
     <button class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</button>
@@ -86,7 +86,7 @@
 <div id="page-review" class="page">
     <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定報告</h3>
     <div id="review-list" class="review-list" style="flex-grow: 1; overflow-y: auto;"></div>
-    <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 Gemini 雲端鑑定</button>
+    <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 AI 鑑定</button>
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="showPage('page-treasure')">🔓 結算成果</button>
 </div>
 
@@ -104,7 +104,6 @@
 <canvas id="proc-canvas" style="display:none;"></canvas>
 
 <script>
-    // --- 資料與變數 ---
     const allSpells = [{n:"火球術",t:"fire"},{n:"冰晶陣",t:"ice"},{n:"雷神怒",t:"light"},{n:"風之翼",t:"wind"},{n:"地動波",t:"earth"},{n:"聖光盾",t:"shield"},{n:"炎爆術",t:"fire"},{n:"絕對零度",t:"ice"},{n:"連鎖閃電",t:"light"},{n:"萬象星隕",t:"fire"}];
     const wordsData = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
@@ -127,9 +126,8 @@
 
     window.selectUser = name => {
         const k = document.getElementById('api-key-input').value.trim();
-        if(!k || !k.startsWith("AIza")) return alert("請先貼上正確的 AIza... 金鑰");
+        if(!k || !k.startsWith("AIza")) return alert("請貼上正確的金鑰");
         localStorage.setItem('gemini_api_key', k);
-        
         currentUser = name;
         maxChallenges = (name === '小凱') ? 2 : 10;
         document.getElementById('display-user').innerText = name;
@@ -189,7 +187,7 @@
         else { stopCam(); window.showPage('page-review'); renderReview(); }
     };
 
-    // --- 核心更新：鑑定連線與詳盡報錯 ---
+    // --- 核心修正：正確的正式版 API 網址 ---
     window.startAI = async function() {
         const key = localStorage.getItem('gemini_api_key');
         document.getElementById('loader').style.display = 'flex';
@@ -200,12 +198,12 @@
                 document.getElementById('progress-fill').style.width = ((i+1)/workbook.length*100)+'%';
                 document.getElementById('progress-status').innerText = `${i+1} / ${workbook.length}`;
                 
-                // 網址更換為相容性最高的 v1beta
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                // 網址更換為穩定正式版路徑 v1
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
                 const payload = { 
                     contents: [{ 
                         parts: [
-                            { text: `辨識手寫字「${workbook[i].word}」。若正確請回傳「正確」，若不正確請回傳你看到的文字。` }, 
+                            { text: `這是手寫字辨識。目標是「${workbook[i].word}」。若正確請回傳「正確」，若不正確請回傳你看到的文字。` }, 
                             { inline_data: { mime_type: "image/jpeg", data: workbook[i].photo.split(',')[1] } }
                         ] 
                     }] 
@@ -214,8 +212,8 @@
                 const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
                 
                 if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`代碼 ${res.status}: ${errorText}`);
+                    const errorJson = await res.json();
+                    throw new Error(errorJson.error.message || "連線錯誤");
                 }
 
                 const json = await res.json();
@@ -226,7 +224,8 @@
                 renderReview();
             }
         } catch (e) {
-            alert(`連線發生錯誤！\n${e.message}\n\n請截圖給開發者或檢查金鑰。`);
+            alert(`連線錯誤：${e.message}`);
+            document.getElementById('btn-ai-start').style.display = 'block';
         }
         document.getElementById('loader').style.display = 'none';
     };
@@ -246,7 +245,7 @@
     async function startCam(){ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:1280}}); document.getElementById('video').srcObject=stream; }
     function stopCam(){ if(stream) stream.getTracks().forEach(t=>t.stop()); }
     window.speakWord = t => { const m = new SpeechSynthesisUtterance(t); m.lang='zh-TW'; speechSynthesis.speak(m); };
-    window.openChest = el => { confetti(); alert("獲得新咒語！"); location.reload(); };
+    window.openChest = el => { confetti(); alert("獲得咒語！"); location.reload(); };
     function getStats(){ const today = new Date().toLocaleDateString(); const key='m_daily_'+currentUser; let s = JSON.parse(localStorage.getItem(key)) || {date:today, count:0}; if(s.date!==today) s={date:today, count:0}; return s; }
 </script>
 </body>
