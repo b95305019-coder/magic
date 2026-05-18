@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V34 - 鑑定診斷版</title>
+    <title>魔法大師 V35 - 影像增壓版</title>
     
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -14,7 +14,6 @@
         .page { display: none; padding: 20px; box-sizing: border-box; min-height: 100dvh; flex-direction: column; }
         .page.active { display: flex; }
 
-        /* 介面樣式 */
         .wizard-icon { font-size: 60px; text-align: center; margin: 10px 0; filter: drop-shadow(0 0 10px var(--m-blue)); animation: float 3s ease-in-out infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 15px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
         .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; min-height: 100px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
@@ -22,18 +21,15 @@
         .speaker-btn { font-size: 70px; cursor: pointer; animation: pulse 2s infinite; }
         .word-display { font-size: 60px; font-weight: 900; letter-spacing: 8px; color: #222; }
 
-        /* 圖鑑 */
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
         .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* 鑑定室細節報告 */
         .review-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 4px solid #555; }
         .review-item.correct { border-left-color: var(--m-gold); background: rgba(255, 215, 0, 0.05); }
         .review-item.failed { border-left-color: var(--m-red); }
         
         .result-info { flex: 1; font-size: 13px; margin-left: 10px; }
         .detected-tag { background: #000; color: #0f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin: 4px 0; display: inline-block; }
-        .reason-tag { color: #ffbaba; font-size: 12px; font-style: italic; }
 
         .preview-img { width: 90px; height: 60px; object-fit: contain; background: #fff; border-radius: 8px; border: 2px solid var(--m-gold); cursor: zoom-in; }
 
@@ -47,6 +43,8 @@
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .progress-container { width: 80%; background: #333; border-radius: 10px; height: 12px; margin: 15px 0; overflow: hidden; border: 1px solid var(--m-gold); }
         .progress-fill { width: 0%; background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; transition: 0.3s; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } }
     </style>
 </head>
 <body>
@@ -63,7 +61,7 @@
 <!-- 登入頁 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold);">真理之書：試煉報告</h2>
+    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：大鑑定師</h2>
     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 30px;">
         <div class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</div>
         <div class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</div>
@@ -77,14 +75,14 @@
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
         <button onclick="location.reload()" style="background:none; border:1px solid white; color:white; border-radius:5px; padding:2px 8px; font-size:11px;">登出</button>
     </div>
-    <div class="energy-bar">⚡ 今日剩餘領獎：<span id="daily-energy">3 / 3</span></div>
+    <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span></div>
     <div id="tome-grid" class="tome-grid"></div>
     <div style="margin-top: 15px;"><button id="start-btn" class="btn btn-gold" onclick="showPage('page-mode-select')">⚔️ 開始試煉</button></div>
 </div>
 
 <!-- 模式選擇 -->
 <div id="page-mode-select" class="page">
-    <h2 style="text-align: center; color: var(--m-gold);">選擇試煉模式</h2>
+    <h2 style="text-align: center; color: var(--m-gold);">選擇模式</h2>
     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px;">
         <div class="btn btn-gold" onclick="startGame('dictation')">🎧 聽寫挑戰</div>
         <div class="btn btn-gold" onclick="startGame('copying')">✍️ 照抄挑戰</div>
@@ -118,9 +116,9 @@
     <button id="btn-next" class="btn btn-outline" style="margin-top:auto;" onclick="nextStep()">下一題</button>
 </div>
 
-<!-- 鑑定室 (重點更新) -->
+<!-- 鑑定室 -->
 <div id="page-review" class="page">
-    <h3 style="text-align: center; color: var(--m-gold);">🔍 符文診斷報告</h3>
+    <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定報告 (點圖可看 AI 視角)</h3>
     <div id="review-list" class="review-list"></div>
     <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 AI 鑑定全部</button>
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="finishReview()">🔓 結算成果</button>
@@ -155,55 +153,51 @@
 
     let currentUser = "", currentMode = "", wordPool = [], mySpells = [], usedWords = [], currentIdx = 0, workbook = [], maxChallenges = 10, stream = null;
 
-    // --- 核心改進：鑑定診斷報告邏輯 ---
-    function diagnoseFailure(target, detected) {
-        if (!detected || detected.trim().length === 0) return "原因：影像空白或筆劃太淡被濾掉。建議：換黑一點的筆或對準光線。";
-        
-        let matchCount = 0;
-        let foundChars = [];
-        for (let char of target) {
-            if (detected.includes(char)) {
-                matchCount++;
-                foundChars.push(char);
-            }
-        }
-
-        if (matchCount > 0 && matchCount < target.length) {
-            return `原因：只認出「${foundChars.join('')}」。建議：字寫緊湊一點，或是背景格線干擾。`;
-        }
-        
-        if (/[a-zA-Z0-9]/.test(detected)) {
-            return "原因：AI 誤認筆劃為英數字。建議：筆劃寫粗一點，避開背景複雜處。";
-        }
-
-        return "原因：辨識結果為亂碼或無意義字符。建議：穩定手部，不要晃動拍照。";
-    }
-
-    // --- 影像預處理優化 ---
-    async function advancedPreprocess(base64) {
+    // --- 核心優化：影像「增壓」預處理 ---
+    async function superPreprocess(base64) {
         return new Promise(resolve => {
             const img = new Image();
             img.onload = () => {
                 const cvs = document.getElementById('proc-canvas');
                 const ctx = cvs.getContext('2d');
-                const scale = 1000 / img.width;
-                cvs.width = 1000; cvs.height = img.height * scale;
-                ctx.drawImage(img, 0, 0, 1000, cvs.height);
+                // 1. 稍微拉大解析度以抓取細節
+                const scale = 1200 / img.width;
+                cvs.width = 1200; cvs.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, 1200, cvs.height);
                 
-                const imgData = ctx.getImageData(0, 0, 1000, cvs.height);
+                const imgData = ctx.getImageData(0, 0, 1200, cvs.height);
                 const data = imgData.data;
 
+                // 2. 動態亮度分析 (找出最深跟最淺)
+                let min = 255, max = 0;
                 for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-                    // 微調閾值為 120，保留更多筆劃細節
-                    const val = avg < 120 ? 0 : 255;
-                    data[i] = data[i+1] = data[i+2] = val;
+                    const g = (data[i] + data[i+1] + data[i+2]) / 3;
+                    if (g < min) min = g;
+                    if (g > max) max = g;
+                }
+
+                // 3. 全拉對比演算法：讓灰筆劃變黑，灰影子變白
+                for (let i = 0; i < data.length; i += 4) {
+                    let g = (data[i] + data[i+1] + data[i+2]) / 3;
+                    // 將亮度重新映射至 0-255，並加強深色區
+                    g = ((g - min) / (max - min)) * 255;
+                    const final = g < 140 ? 0 : 255; 
+                    data[i] = data[i+1] = data[i+2] = final;
                 }
                 ctx.putImageData(imgData, 0, 0);
-                resolve(cvs.toDataURL('image/jpeg', 0.9));
+                resolve(cvs.toDataURL('image/jpeg', 1.0));
             };
             img.src = base64;
         });
+    }
+
+    // --- 鑑定報告診斷 ---
+    function diagnose(target, detected) {
+        if (!detected || detected.length < 1) return "原因：完全看不清筆劃。建議：光線對準，筆畫寫重一點。";
+        let match = 0;
+        for (let char of target) if (detected.includes(char)) match++;
+        if (match > 0) return `原因：只認出「${target.charAt(match-1)}」。建議：字寫大且靠攏，避開格線。`;
+        return "原因：字體太草，AI 誤認成亂碼。建議：工整書寫。";
     }
 
     // --- 鑑定室渲染 ---
@@ -213,31 +207,18 @@
             const div = document.createElement('div');
             const isOk = item.status === true;
             div.className = `review-item ${item.status === null ? '' : (isOk ? 'correct' : 'failed')}`;
-            
-            let statusIcon = item.status === true ? '✅' : (item.status === false ? '❌' : '⏳');
-            let detectedText = item.detectedText || (item.status === null ? "等待鑑定..." : "無文字");
-            let diagnosticMsg = isOk ? "鑑定大成功！" : (item.status === false ? diagnoseFailure(item.word, item.detectedText) : "");
+            let icon = isOk ? '✅' : (item.status === false ? '❌' : '⏳');
+            let detect = item.detectedText || (item.status === null ? "等待中..." : "未偵測到");
+            let msg = isOk ? "鑑定大成功！" : (item.status === false ? diagnose(item.word, item.detectedText) : "");
+            let btn = isOk ? `<button onclick="manual(${i},false)" class="btn-mini" style="background:var(--m-red)">✕ 取消通過</button>` : `<button onclick="manual(${i},true)" class="btn-mini" style="background:#555">手動通過</button>`;
 
-            let btn = item.status === true ? 
-                `<button onclick="manual(${i}, false)" class="btn-mini" style="background:var(--m-red)">✕ 取消通過</button>` : 
-                `<button onclick="manual(${i}, true)" class="btn-mini" style="background:#555">手動通過</button>`;
-
-            div.innerHTML = `
-                <div style="display:flex; align-items:center;">
-                    <img src="${item.rawPhoto}" class="preview-img" onclick="window.openZoom('${item.rawPhoto}')">
-                    <div class="result-info">
-                        <b>目標：${item.word}</b> ${statusIcon}<br>
-                        AI 看到：<span class="detected-tag">${detectedText}</span><br>
-                        <span class="reason-tag">${diagnosticMsg}</span><br>
-                        ${btn}
-                    </div>
-                </div>
-            `;
+            div.innerHTML = `<div style="display:flex; align-items:center;"><img src="${item.processedPhoto || item.rawPhoto}" class="preview-img" onclick="window.openZoom(this.src)"><div class="result-info"><b>目標：${item.word}</b> ${icon}<br>AI 鑑定結果：<span class="detected-tag">${detect}</span><br><span style="font-size:11px;color:#ffbaba">${msg}</span><br>${btn}</div></div>`;
             list.appendChild(div);
         });
         document.getElementById('final-btn').style.display = workbook.every(i => i.status !== null) ? 'block' : 'none';
     };
 
+    // --- AI 核心 ---
     window.startAI = async function() {
         document.getElementById('loader').style.display = 'flex';
         document.getElementById('btn-ai-start').style.display = 'none';
@@ -247,11 +228,13 @@
                 document.getElementById('progress-fill').style.width = ((i+1)/workbook.length*100)+'%';
                 document.getElementById('progress-status').innerText = `${i+1} / ${workbook.length}`;
                 
-                const processed = await advancedPreprocess(workbook[i].rawPhoto);
+                // 增壓處理
+                const processed = await superPreprocess(workbook[i].rawPhoto);
+                workbook[i].processedPhoto = processed; // 存下來供預覽
+                
                 const res = await worker.recognize(processed);
                 const txt = res.data.text.replace(/\s/g, '');
-                
-                workbook[i].detectedText = txt; // 儲存 AI 看到的文字
+                workbook[i].detectedText = txt;
                 
                 let match = txt.includes(workbook[i].word);
                 if(!match){
@@ -262,23 +245,23 @@
                 renderReview();
             }
             await worker.terminate();
-        } catch (e) { alert("鑑定魔法失敗"); }
+        } catch (e) { alert("鑑定失敗"); }
         document.getElementById('loader').style.display = 'none';
     };
 
-    // --- 其他原有功能 ---
+    // --- 其餘原有邏輯 ---
     window.selectUser = n => { currentUser = n; maxChallenges = (n === '小凱') ? 2 : 10; document.getElementById('display-user').innerText = n; mySpells = JSON.parse(localStorage.getItem('m_mine_'+n)) || []; usedWords = JSON.parse(localStorage.getItem('m_used_'+n)) || []; showPage('page-home'); };
     window.showPage = id => { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id==='page-home') renderHome(); };
-    window.renderHome = () => { const grid = document.getElementById('tome-grid'); grid.innerHTML = ''; defaultSpells.forEach(s => { const has = mySpells.some(m => m.n === s.n); const div = document.createElement('div'); div.className = 'scroll-icon'; div.style.opacity = has ? "1" : "0.2"; div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div); }); const stats = getDailyStats(); document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3"; const btn = document.getElementById('start-btn'); btn.disabled = (stats.count >= 3); btn.innerText = (stats.count >= 3) ? "今日魔力已盡" : `⚔️ 開始 ${maxChallenges} 階試煉`; };
+    window.renderHome = () => { const grid = document.getElementById('tome-grid'); grid.innerHTML = ''; defaultSpells.forEach(s => { const has = mySpells.find(m => m.n === s.n); const div = document.createElement('div'); div.className = 'scroll-icon'; div.style.opacity = has ? "1" : "0.2"; div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div); }); const stats = getDailyStats(); document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3"; const btn = document.getElementById('start-btn'); btn.disabled = (stats.count >= 3); btn.innerText = (stats.count >= 3) ? "魔力耗盡" : `⚔️ 開始挑戰`; };
     window.startGame = m => { currentMode = m; let pool = officialWords[currentUser] || []; let avail = pool.filter(w => !usedWords.includes(w)); if (avail.length < maxChallenges) { usedWords = []; avail = pool; } challenges = avail.sort(() => 0.5 - Math.random()).slice(0, maxChallenges); usedWords = [...usedWords, ...challenges]; localStorage.setItem('m_used_'+currentUser, JSON.stringify(usedWords)); currentIdx = 0; workbook = []; showPage('page-collect'); startCamera(); updateUI(); };
-    function updateUI() { document.getElementById('progress-label').innerText = `${currentIdx+1} / ${maxChallenges}`; document.getElementById('target-word').innerText = challenges[currentIdx]; document.getElementById('preview-box').style.display = 'none'; document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "拍照完成" : "下一題"; if (currentMode === 'dictation') { document.getElementById('ui-dictation').style.display = 'block'; document.getElementById('ui-copying').style.display = 'none'; setTimeout(() => speakCurrentWord(), 500); } else { document.getElementById('ui-dictation').style.display = 'none'; document.getElementById('ui-copying').style.display = 'block'; } }
+    function updateUI() { document.getElementById('progress-label').innerText = `${currentIdx+1} / ${maxChallenges}`; document.getElementById('target-word').innerText = challenges[currentIdx]; document.getElementById('preview-box').style.display = 'none'; document.getElementById('btn-next').innerText = (currentIdx === maxChallenges - 1) ? "錄入完成" : "下一題"; if (currentMode === 'dictation') { document.getElementById('ui-dictation').style.display = 'block'; document.getElementById('ui-copying').style.display = 'none'; setTimeout(() => speakCurrentWord(), 500); } else { document.getElementById('ui-dictation').style.display = 'none'; document.getElementById('ui-copying').style.display = 'block'; } }
     window.nextStep = () => { if(!workbook[currentIdx]) return alert("請先拍照"); if(currentIdx < maxChallenges-1) { currentIdx++; updateUI(); } else { if(stream) stream.getTracks().forEach(t=>t.stop()); showPage('page-review'); renderReview(); } };
     window.manual = (i, s) => { workbook[i].status = s; renderReview(); };
     async function startCamera() { try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 1280 } }); document.getElementById('video').srcObject = stream; } catch (e) { alert("相機授權失敗"); } }
     window.snap符文 = () => { const video = document.getElementById('video'), canvas = document.getElementById('proc-canvas'), ctx = canvas.getContext('2d'); const vw = video.videoWidth, vh = video.videoHeight; const cropW = vw * 0.8, cropH = vh * 0.25; canvas.width = cropW; canvas.height = cropH; ctx.drawImage(video, (vw-cropW)/2, (vh-cropH)/2, cropW, cropH, 0, 0, cropW, cropH); const data = canvas.toDataURL('image/jpeg', 0.9); workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: data, status: null, detectedText: "" }; document.getElementById('capture-preview').src = data; document.getElementById('preview-box').style.display = 'block'; };
     window.openZoom = s => { document.getElementById('zoom-img').src = s; document.getElementById('zoom-modal').style.display = 'flex'; };
     window.finishReview = () => { showPage('page-treasure'); };
-    window.openChest = el => { el.style.animation = "shake 0.5s 2"; const score = workbook.filter(i => i.status === true).length; setTimeout(() => { document.getElementById('chest-zone').style.display = 'none'; const reveal = document.getElementById('prize-reveal'); reveal.style.display = "block"; if (score >= (maxChallenges * 0.8)) { const ungot = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n)); const prize = ungot.length > 0 ? ungot[Math.floor(Math.random()*ungot.length)] : defaultSpells[Math.floor(Math.random()*defaultSpells.length)]; if(!mySpells.some(m => m.n === prize.n)) { mySpells.push(prize); localStorage.setItem('m_mine_' + currentUser, JSON.stringify(mySpells)); } const stats = getDailyStats(); stats.count++; localStorage.setItem('m_daily_'+currentUser, JSON.stringify(stats)); confetti({ particleCount: 150, spread: 70 }); document.getElementById('prize-name').innerText = `獲得：${prize.n}`; } else { document.getElementById('prize-name').innerText = "修煉不足"; } }, 1000); };
+    window.openChest = el => { el.style.animation = "shake 0.5s 2"; const score = workbook.filter(i => i.status === true).length; setTimeout(() => { document.getElementById('chest-zone').style.display = 'none'; const reveal = document.getElementById('prize-reveal'); reveal.style.display = "block"; if (score >= (maxChallenges * 0.8)) { const ungot = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n)); const prize = ungot.length > 0 ? ungot[Math.floor(Math.random()*ungot.length)] : defaultSpells[0]; if(!mySpells.some(m => m.n === prize.n)) { mySpells.push(prize); localStorage.setItem('m_mine_' + currentUser, JSON.stringify(mySpells)); } const stats = getDailyStats(); stats.count++; localStorage.setItem('m_daily_'+currentUser, JSON.stringify(stats)); confetti({ particleCount: 150, spread: 70 }); document.getElementById('prize-name').innerText = `獲得：${prize.n}`; } else { document.getElementById('prize-name').innerText = "修煉不足"; } }, 1000); };
     function getDailyStats() { const today = new Date().toLocaleDateString(); const key = 'm_daily_' + currentUser; let stats = { date: today, count: 0 }; try { const data = localStorage.getItem(key); if(data) { const p = JSON.parse(data); if(p.date === today) stats = p; } } catch(e) {} return stats; }
     window.speakWord = t => { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); const m = new SpeechSynthesisUtterance(t); m.lang = 'zh-TW'; m.rate = 0.8; window.speechSynthesis.speak(m); };
     window.speakCurrentWord = () => { if (challenges[currentIdx]) speakWord(challenges[currentIdx]); };
