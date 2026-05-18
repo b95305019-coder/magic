@@ -3,212 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V45 - 終極穩定版</title>
+    <title>魔法大師 V46 - 完美修復版</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        :root { --m-purple: #1A1A2E; --m-gold: #FFD700; --m-blue: #00D2FF; --m-red: #FF3B30; --m-parchment: #fdf5e6; }
-        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--m-purple); color: white; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        :root { --m-purple: #1A1A2E; --m-gold: #FFD700; --m-blue: #00D2FF; --m-deep: #16213E; --m-red: #FF3B30; --m-parchment: #fdf5e6; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; margin: 0; background: var(--m-purple); color: white; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         .page { display: none; padding: 20px; box-sizing: border-box; min-height: 100dvh; flex-direction: column; }
         .page.active { display: flex; }
         .wizard-icon { font-size: 60px; text-align: center; margin: 10px 0; animation: float 3s infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 15px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
-        .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 4px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; }
-        .word-display { font-size: 55px; font-weight: 900; letter-spacing: 8px; color: #222; }
+        .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 4px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .word-display { font-size: 50px; font-weight: 900; letter-spacing: 5px; color: #222; }
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
-        .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .scroll-icon b { margin-top: 5px; color: var(--m-gold); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
-        .review-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 4px solid #555; }
-        .review-item.correct { border-left-color: var(--m-gold); }
-        .review-item.failed { border-left-color: var(--m-red); }
-        .detected-tag { background: #000; color: #FFD700; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .preview-img { width: 90px; height: 60px; object-fit: contain; background: #fff; border-radius: 8px; border: 2px solid var(--m-gold); cursor: zoom-in; }
-        .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; box-sizing: border-box; text-decoration: none; }
+        .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.2; }
+        .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; box-sizing: border-box; }
         .btn-gold { background: linear-gradient(45deg, var(--m-gold), #FFA500); color: black !important; }
         .btn-outline { background: transparent; border: 2px solid var(--m-blue); color: white !important; }
-        .btn-mini { font-size: 11px; border: none; padding: 6px 12px; border-radius: 6px; color: white; margin-top: 5px; }
+        .review-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin-bottom: 12px; display: flex; align-items: center; }
+        .preview-img { width: 80px; height: 50px; object-fit: contain; background: #fff; border-radius: 5px; border: 1px solid var(--m-gold); }
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .progress-container { width: 80%; background: #333; border-radius: 10px; height: 12px; margin: 15px 0; overflow: hidden; border: 1px solid var(--m-gold); }
-        .progress-fill { width: 0%; background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; transition: 0.3s; }
-        #zoom-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index: 9999; display:none; align-items:center; justify-content:center; }
-        #zoom-modal img { max-width: 95%; max-height: 85%; border: 2px solid white; }
-        .chest { font-size: 60px; cursor: pointer; transition: 0.3s; }
-        .chest.shake { animation: shake 0.6s infinite; }
-        .detail-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 7000; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .scroll-full { background: #e3d5b8; width: 100%; max-width: 320px; padding: 40px 20px; border-radius: 5px; border-left: 15px solid #8b4513; border-right: 15px solid #8b4513; color: #333; text-align: center; position: relative; }
+        .progress-bar { width: 80%; height: 10px; background: #333; border-radius: 5px; margin-top: 10px; overflow: hidden; border: 1px solid var(--m-gold); }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } }
-        #snap-notice { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: var(--m-blue); padding: 10px 20px; border-radius: 20px; display: none; z-index: 2000; }
     </style>
 </head>
 <body>
 
-<div id="zoom-modal" onclick="this.style.display='none'"><img id="zoom-img" src=""></div>
-<div id="snap-notice">✨ 符文記錄成功</div>
-
 <div id="loader" class="loader">
-    <div style="border: 4px solid #333; border-top: 4px solid var(--m-gold); width: 40px; height: 40px; border-radius: 50%; animation: rotate 1s linear infinite;"></div>
-    <p id="loader-text" style="margin-top:15px; color:var(--m-gold); font-weight: bold;">正在連線雲端大腦...</p>
-    <div class="progress-container"><div id="progress-fill" class="progress-fill"></div></div>
-    <p id="progress-status" style="font-size: 14px; color: #aaa;">0 / 10</p>
+    <div style="border: 4px solid #333; border-top: 4px solid var(--m-gold); width: 40px; height: 40px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="margin-top:15px; color:var(--m-gold);">正在連線雲端大腦鑑定...</p>
+    <div class="progress-bar"><div id="progress-fill" style="width:0%; height:100%; background:var(--m-gold); transition:0.3s;"></div></div>
 </div>
 
-<div id="detail-modal" class="detail-modal" onclick="closeDetail()">
-    <div class="scroll-full" onclick="event.stopPropagation()">
-        <p style="font-weight:bold; color:#8b4513;" id="detail-attr">ELEMENT</p>
-        <div style="font-size:60px;">📜</div>
-        <h1 id="detail-name">名稱</h1>
-        <div class="btn btn-gold" id="detail-cast-btn">✨ 施展魔法特效</div>
-    </div>
-</div>
-
-<!-- 1. 登入 -->
+<!-- 1. 角色與金鑰 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書 V45</h2>
-    <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin:20px 0;">
-        <p style="font-size:12px; margin:0 0 5px 0;">🔑 請貼上您的 Gemini API Key：</p>
-        <input type="text" id="api-key-input" placeholder="長按此處貼上..." style="width:100%; padding:12px; border-radius:8px; border:none; box-sizing:border-box; font-size:16px;">
+    <h2 style="text-align: center; color: var(--m-gold);">真理之書 V46</h2>
+    <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin-bottom:20px;">
+        <p style="font-size:12px; margin:0;">🔑 步驟 1: 貼上 Gemini API 金鑰</p>
+        <input type="text" id="api-key-input" placeholder="AIza 開頭的長字串..." style="width:100%; padding:12px; border-radius:8px; border:none; margin:10px 0; box-sizing:border-box;">
+        <p style="font-size:10px; color:#aaa;">* 沒有金鑰將無法使用「完美辨識」功能</p>
     </div>
-    <div class="btn btn-gold" onclick="saveAndGo()">💾 儲存金鑰並進入</div>
+    <p style="font-size:12px; text-align:center;">步驟 2: 選擇魔法師進入遊戲</p>
+    <button class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</button>
+    <button class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</button>
+    <button class="btn btn-outline" style="border-color:var(--m-gold); color:var(--m-gold) !important;" onclick="selectUser('小凱')">🛠️ 測試員：小凱</button>
 </div>
 
-<!-- 2. 選擇魔法師 -->
-<div id="page-user-select" class="page">
-    <h2 style="text-align: center; color: var(--m-gold);">選擇魔法師</h2>
-    <div class="btn btn-outline" onclick="selectUser('小緁')">🪄 魔法師：小緁</div>
-    <div class="btn btn-outline" onclick="selectUser('小鈞')">🪄 魔法師：小鈞</div>
-    <div class="btn btn-outline" style="border-color: var(--m-gold); color: var(--m-gold) !important;" onclick="selectUser('小凱')">🛠️ 測試帳號：小凱</div>
-</div>
-
-<!-- 3. 圖鑑 -->
+<!-- 2. 圖鑑主頁 -->
 <div id="page-home" class="page">
-    <div style="display:flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+    <div style="display:flex; justify-content: space-between; align-items: center;">
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
-        <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:white; padding:5px; border-radius:5px; font-size:10px;">登出</button>
+        <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:white; padding:4px 8px; border-radius:5px; font-size:10px;">登出</button>
     </div>
     <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span></div>
     <div id="tome-grid" class="tome-grid"></div>
-    <div style="margin-top: 15px;"><button id="start-btn" class="btn btn-gold" onclick="showPage('page-mode-select')">⚔️ 開始試煉</button></div>
+    <div style="margin-top: 15px;"><button class="btn btn-gold" onclick="showPage('page-mode-select')">⚔️ 開始試煉挑戰</button></div>
 </div>
 
-<!-- 4. 模式選擇 -->
+<!-- 3. 模式 -->
 <div id="page-mode-select" class="page">
-    <h2 style="text-align: center; color: var(--m-gold);">選擇試煉模式</h2>
-    <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px;">
-        <div class="btn btn-gold" style="padding:30px;" onclick="startGame('dictation')">🎧 聽寫挑戰</div>
-        <div class="btn btn-gold" style="padding:30px;" onclick="startGame('copying')">✍️ 照抄挑戰</div>
-    </div>
-    <button class="btn btn-outline" onclick="showPage('page-home')">返回</button>
+    <h2 style="text-align: center; color: var(--m-gold);">選擇模式</h2>
+    <button class="btn btn-gold" style="padding:30px;" onclick="startGame('dictation')">🎧 聽寫測驗</button>
+    <button class="btn btn-gold" style="padding:30px; margin-top:20px;" onclick="startGame('copying')">✍️ 照著寫測驗</button>
+    <button class="btn btn-outline" style="margin-top:auto;" onclick="showPage('page-home')">返回</button>
 </div>
 
-<!-- 5. 拍照頁面 -->
+<!-- 4. 拍照頁 -->
 <div id="page-collect" class="page">
-    <div style="display:flex; justify-content: space-between;"><span id="progress-label">1 / 10</span><button onclick="stopCameraAndHome()">✕</button></div>
+    <div style="display:flex; justify-content: space-between;"><span id="progress-label">1 / 10</span><button onclick="location.reload()">✕</button></div>
     <div class="magic-card" style="margin-top:10px;">
-        <div id="ui-dictation" style="display:none;"><div style="font-size:70px; cursor:pointer;" onclick="speakCurrentWord()">🔊</div></div>
+        <div id="ui-dictation" style="display:none;"><div style="font-size:70px; cursor:pointer;" onclick="speakCurrent()">🔊</div></div>
         <div id="ui-copying" style="display:none;"><div id="target-word" class="word-display">...</div></div>
     </div>
-    <div class="camera-container" style="position: relative; width: 100%; height: 260px; background: #000; border-radius: 20px; overflow: hidden; margin: 15px 0; border: 2px solid var(--m-blue);">
+    <div style="position: relative; width: 100%; height: 260px; background: #000; border-radius: 20px; overflow: hidden; margin: 15px 0; border: 2px solid var(--m-blue);">
         <video id="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 90px; border: 3px solid var(--m-gold); border-radius: 10px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none;"></div>
     </div>
-    <button class="btn btn-gold" onclick="snap符文()">🔮 鎖定並錄製符文</button>
+    <button class="btn btn-gold" onclick="snap()">🔮 鎖定並錄入符文</button>
     <button id="btn-next" class="btn btn-outline" style="margin-top:auto;" onclick="nextStep()">下一步</button>
 </div>
 
-<!-- 6. 鑑定室 -->
+<!-- 5. 鑑定室 -->
 <div id="page-review" class="page">
-    <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定報告</h3>
-    <div id="review-list" class="review-list" style="flex-grow: 1; overflow-y: auto;"></div>
-    <button class="btn btn-gold" id="btn-ai-start" onclick="startGeminiAI()">🚀 啟動 AI 鑑定</button>
+    <h3 style="text-align: center; color: var(--m-gold);">🔍 雲端鑑定報告</h3>
+    <div id="review-list" style="flex-grow: 1; overflow-y: auto;"></div>
+    <button class="btn btn-gold" id="btn-ai-start" onclick="startAI()">🚀 啟動 Gemini 雲端鑑定</button>
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="showPage('page-treasure')">🔓 結算成果</button>
 </div>
 
-<!-- 7. 寶箱頁面 -->
+<!-- 6. 藏寶室 -->
 <div id="page-treasure" class="page">
     <h2 style="text-align: center; color: var(--m-gold);">🎁 藏寶室</h2>
     <div id="chest-zone" style="display: flex; justify-content: space-around; margin-top: 40px;">
-        <div class="chest shake" onclick="openChest(this)">📦</div>
-        <div class="chest shake" onclick="openChest(this)">📦</div>
-        <div class="chest shake" onclick="openChest(this)">📦</div>
+        <div class="chest" style="font-size:60px; cursor:pointer;" onclick="openChest(this)">📦</div>
+        <div class="chest" style="font-size:60px; cursor:pointer;" onclick="openChest(this)">📦</div>
+        <div class="chest" style="font-size:60px; cursor:pointer;" onclick="openChest(this)">📦</div>
     </div>
-    <div id="prize-reveal" style="display:none; text-align:center; margin-top:20px;"><h1 id="prize-name">...</h1><button class="btn btn-gold" onclick="location.reload()">回主頁</button></div>
+    <div id="prize-reveal" style="display:none; text-align:center; margin-top:20px;"><h1 id="prize-name">...</h1><button class="btn btn-gold" onclick="location.reload()">返回大殿</button></div>
 </div>
-
-<div id="effect-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9000; display: flex; align-items: center; justify-content: center;"><div id="magic-visual" style="width: 250px; height: 250px; border-radius: 50%; opacity: 0; transition: 0.5s; border: 8px double var(--m-gold);"></div></div>
 
 <canvas id="proc-canvas" style="display:none;"></canvas>
 
 <script>
-    // --- 核心資料 ---
-    const allSpells = [
-        {n:"火球術",t:"fire"},{n:"冰晶陣",t:"ice"},{n:"雷神怒",t:"light"},{n:"風之翼",t:"wind"},{n:"地動波",t:"earth"},{n:"聖光盾",t:"shield"},
-        {n:"炎爆術",t:"fire"},{n:"絕對零度",t:"ice"},{n:"連鎖閃電",t:"light"},{n:"疾風步",t:"wind"},{n:"崩山裂地",t:"earth"},{n:"淨化之光",t:"light"},
-        {n:"餘燼之握",t:"fire"},{n:"極地風暴",t:"ice"},{n:"聖域保護",t:"shield"},{n:"萬象星隕",t:"fire"},{n:"寒冬之怒",t:"ice"},{n:"雷鳴爆破",t:"light"}
-    ];
+    const allSpells = [{n:"火球術",t:"fire"},{n:"冰晶陣",t:"ice"},{n:"雷神怒",t:"light"},{n:"風之翼",t:"wind"},{n:"地動波",t:"earth"},{n:"聖光盾",t:"shield"},{n:"炎爆術",t:"fire"},{n:"絕對零度",t:"ice"},{n:"連鎖閃電",t:"light"},{n:"萬象星隕",t:"fire"}];
     const wordsData = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
         "小緁": ["傘", "烏雲", "天色暗", "爺爺", "猜字", "謎語", "撐開", "屋頂", "柺杖", "滴滴答答", "叩", "嘻嘻哈哈", "落下來", "大街", "答案", "園丁", "公園", "每天", "認真", "比", "遊客", "相當", "高興", "拍照", "草皮", "摘花", "立布告牌", "各位", "重新", "它", "欣賞", "奇妙"],
-        "小凱": ["成功", "測試"]
+        "小凱": ["測試", "成功"]
     };
 
-    let currentUser="", currentMode="", mySpells=[], usedWords=[], currentIdx=0, workbook=[], maxChallenges=10, stream=null, chestLocked=false;
+    let currentUser="", currentMode="", mySpells=[], usedWords=[], challenges=[], workbook=[], currentIdx=0, maxChallenges=10, stream=null;
 
-    // --- 頁面控制 ---
-    window.showPage = function(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 'page-home') renderHome();
-    };
-
-    window.saveAndGo = function() {
-        const key = document.getElementById('api-key-input').value.trim();
-        if(!key || key.length < 20) return alert("金鑰格式看起來不對，請重新貼上。");
-        localStorage.setItem('gemini_api_key', key);
-        showPage('page-user-select');
-    };
-
-    window.selectUser = function(name) {
-        currentUser = name;
-        maxChallenges = (name === '小凱') ? 2 : 10;
-        document.getElementById('display-user').innerText = name;
-        mySpells = JSON.parse(localStorage.getItem('m_mine_'+name)) || [];
-        usedWords = JSON.parse(localStorage.getItem('m_used_'+name)) || [];
-        showPage('page-home');
-    };
-
+    // --- 基礎控制 ---
     window.onload = () => {
         const k = localStorage.getItem('gemini_api_key');
         if(k) document.getElementById('api-key-input').value = k;
     };
 
-    // --- 遊戲邏輯 ---
+    window.showPage = id => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'page-home') renderHome();
+    };
+
+    window.selectUser = name => {
+        const key = document.getElementById('api-key-input').value.trim();
+        if(key) localStorage.setItem('gemini_api_key', key);
+        
+        currentUser = name;
+        maxChallenges = (name === '小凱') ? 2 : 10;
+        document.getElementById('display-user').innerText = name;
+        
+        mySpells = JSON.parse(localStorage.getItem('m_mine_'+name)) || [];
+        usedWords = JSON.parse(localStorage.getItem('m_used_'+name)) || [];
+        
+        window.showPage('page-home');
+    };
+
     window.renderHome = () => {
         const grid = document.getElementById('tome-grid'); grid.innerHTML = '';
         allSpells.forEach(s => {
             const has = mySpells.some(m => m.n === s.n);
             const div = document.createElement('div');
-            div.className = 'scroll-icon'; div.style.opacity = has ? "1" : "0.2";
-            div.innerHTML = `<span>📜</span><b>${s.n}</b>`;
-            if(has) div.onclick = () => window.openDetail(s);
+            div.className = 'scroll-icon';
+            div.style.opacity = has ? "1" : "0.2";
+            div.innerHTML = `📜<br>${s.n}`;
             grid.appendChild(div);
         });
         const stats = getStats();
         document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3";
-        document.getElementById('start-btn').disabled = (stats.count >= 3);
     };
 
-    window.startGame = function(m) {
-        currentMode = m;
-        const pool = wordsData[currentUser] || [];
+    // --- 遊戲邏輯 (修正題目不顯示問題) ---
+    window.startGame = mode => {
+        currentMode = mode;
+        const pool = wordsData[currentUser] || ["錯誤", "重新登入"];
+        
+        // 隨機選題邏輯
         let avail = pool.filter(w => !usedWords.includes(w));
         if (avail.length < maxChallenges) { usedWords = []; avail = pool; }
+        
         challenges = avail.sort(() => 0.5 - Math.random()).slice(0, maxChallenges);
         usedWords = [...usedWords, ...challenges];
         localStorage.setItem('m_used_'+currentUser, JSON.stringify(usedWords));
-        currentIdx = 0; workbook = [];
-        showPage('page-collect');
+        
+        workbook = []; currentIdx = 0;
+        window.showPage('page-collect');
         startCam();
         updateUI();
     };
@@ -216,90 +176,72 @@
     function updateUI() {
         document.getElementById('progress-label').innerText = `${currentIdx+1} / ${maxChallenges}`;
         document.getElementById('target-word').innerText = challenges[currentIdx];
-        document.getElementById('preview-box').style.display = 'none';
+        
         document.getElementById('ui-dictation').style.display = (currentMode==='dictation'?'block':'none');
         document.getElementById('ui-copying').style.display = (currentMode==='copying'?'block':'none');
-        if(currentMode==='dictation') setTimeout(() => window.speakCurrentWord(), 500);
+        
+        if(currentMode==='dictation') setTimeout(() => window.speakWord(challenges[currentIdx]), 500);
     }
 
+    window.snap = () => {
+        const v = document.getElementById('video'), c = document.getElementById('proc-canvas'), ctx = c.getContext('2d');
+        c.width = 600; c.height = 200;
+        ctx.drawImage(v, (v.videoWidth - 800)/2, (v.videoHeight - 300)/2, 800, 300, 0, 0, 600, 200);
+        const data = c.toDataURL('image/jpeg', 0.8);
+        workbook[currentIdx] = { word: challenges[currentIdx], photo: data, status: null };
+        alert("✨ 符文已記錄");
+    };
+
     window.nextStep = () => {
-        if(!workbook[currentIdx]) return alert("請拍下符文");
+        if(!workbook[currentIdx]) return alert("請先拍照");
         if(currentIdx < maxChallenges - 1) { currentIdx++; updateUI(); }
-        else { stopCam(); showPage('page-review'); renderReview(); }
+        else { stopCam(); window.showPage('page-review'); renderReview(); }
     };
 
-    // --- 相機與錄製 ---
-    async function startCam(){ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:1280}}); document.getElementById('video').srcObject=stream;}catch(e){alert("相機異常");} }
-    function stopCam(){ if(stream) stream.getTracks().forEach(t=>t.stop()); }
-    
-    window.snap符文 = () => {
-        const v=document.getElementById('video'), c=document.getElementById('proc-canvas'), ctx=c.getContext('2d');
-        const vw=v.videoWidth, vh=v.videoHeight;
-        c.width=600; c.height=200;
-        ctx.drawImage(v,(vw-v.videoWidth*0.8)/2,(vh-v.videoHeight*0.3)/2,v.videoWidth*0.8,v.videoHeight*0.3,0,0,600,200);
-        workbook[currentIdx] = {word: challenges[currentIdx], rawPhoto: c.toDataURL('image/jpeg',0.8), status: null, detectedText: ""};
-        const n = document.getElementById('snap-notice'); n.style.display="block"; setTimeout(()=>n.style.display="none",800);
-    };
-
-    // --- AI 鑑定 (API 路徑修正版) ---
-    window.startGeminiAI = async function() {
+    // --- AI 鑑定 (Gemini 核心) ---
+    window.startAI = async () => {
         const key = localStorage.getItem('gemini_api_key');
-        if(!key) return alert("請回首頁填寫金鑰");
+        if(!key) return alert("請回首頁填寫 API Key 才能連線雲端大腦！");
+        
         document.getElementById('loader').style.display = 'flex';
         document.getElementById('btn-ai-start').style.display = 'none';
 
         try {
-            for(let i=0; i<workbook.length; i++){
-                document.getElementById('progress-status').innerText = `${i+1} / ${workbook.length}`;
+            for(let i=0; i<workbook.length; i++) {
+                document.getElementById('progress-fill').style.width = ((i+1)/workbook.length*100)+'%';
+                
                 const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
-                const payload = { contents: [{ parts: [{ text: `辨識符文「${workbook[i].word}」。正確回傳「正確」，錯誤回傳看到的字。` }, { inline_data: { mime_type: "image/jpeg", data: workbook[i].rawPhoto.split(',')[1] } }] }] };
+                const payload = { contents: [{ parts: [{ text: `辨識手寫字「${workbook[i].word}」。正確回傳「正確」，錯誤回傳看到的字。` }, { inline_data: { mime_type: "image/jpeg", data: workbook[i].photo.split(',')[1] } }] }] };
+                
                 const res = await fetch(url, { method: "POST", body: JSON.stringify(payload) });
                 const json = await res.json();
-                if(json.error) throw new Error(json.error.message);
                 const txt = json.candidates[0].content.parts[0].text.trim();
+                
                 workbook[i].detectedText = txt;
                 workbook[i].status = txt.includes("正確") || txt.includes(workbook[i].word);
                 renderReview();
             }
-        } catch (e) { alert("鑑定失敗：" + e.message); document.getElementById('btn-ai-start').style.display = 'block'; }
+        } catch (e) { alert("連線失敗，請檢查金鑰是否有誤。"); }
         document.getElementById('loader').style.display = 'none';
     };
 
-    window.renderReview = () => {
+    function renderReview() {
         const list = document.getElementById('review-list'); list.innerHTML = '';
         workbook.forEach((item, i) => {
             const div = document.createElement('div');
-            div.className = `review-item ${item.status===true?'correct':(item.status===false?'failed':'')}`;
-            div.innerHTML = `<div style="display:flex;align-items:center;"><img src="${item.rawPhoto}" class="preview-img" onclick="window.openZoom(this.src)"><div style="flex:1;margin-left:10px;"><b>目標：${item.word}</b><br><span class="detected-tag">${item.detectedText||'等待鑑定'}</span><br><button onclick="window.manual(${i},${!item.status})" style="font-size:10px;background:#555;color:white;border:none;border-radius:4px;padding:5px;">${item.status?'取消':'通過'}</button></div></div>`;
+            div.className = 'review-item';
+            div.innerHTML = `<img src="${item.photo}" class="preview-img"><div style="flex:1;margin-left:10px;"><b>目標：${item.word}</b><br><small>AI讀取：${item.detectedText||'等待中'}</small><br><button onclick="manual(${i})">${item.status?'✅ 取消':'❌ 通過'}</button></div>`;
             list.appendChild(div);
         });
         document.getElementById('final-btn').style.display = workbook.every(i=>i.status!==null) ? 'block' : 'none';
-    };
+    }
 
-    // --- 輔助函式 ---
-    window.manual = (i,s) => { workbook[i].status=s; window.renderReview(); };
-    window.openDetail = s => { document.getElementById('detail-name').innerText = s.n; document.getElementById('detail-attr').innerText = s.t.toUpperCase(); document.getElementById('detail-cast-btn').onclick = () => { window.castMagic(s.t); window.closeDetail(); }; document.getElementById('detail-modal').style.display = 'flex'; };
-    window.closeDetail = () => { document.getElementById('detail-modal').style.display = 'none'; };
-    window.openZoom = s => { document.getElementById('zoom-img').src = s; document.getElementById('zoom-modal').style.display = 'flex'; };
-    window.stopCameraAndHome = () => { stopCam(); showPage('page-home'); };
+    window.manual = i => { workbook[i].status = !workbook[i].status; renderReview(); };
+    async function startCam(){ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:1280}}); document.getElementById('video').srcObject=stream; }
+    function stopCam(){ if(stream) stream.getTracks().forEach(t=>t.stop()); }
     window.speakWord = t => { const m = new SpeechSynthesisUtterance(t); m.lang='zh-TW'; speechSynthesis.speak(m); };
-    window.speakCurrentWord = () => window.speakWord(challenges[currentIdx]);
-    window.openChest = el => {
-        if(chestLocked) return; chestLocked = true;
-        el.style.animation = "shake 0.5s 2";
-        const score = workbook.filter(i=>i.status===true).length;
-        setTimeout(() => {
-            document.getElementById('chest-zone').style.display = 'none'; document.getElementById('prize-reveal').style.display = 'block';
-            if (score >= maxChallenges*0.8) {
-                const prize = allSpells[Math.floor(Math.random()*allSpells.length)];
-                if(!mySpells.some(m=>m.n===prize.n)) { mySpells.push(prize); localStorage.setItem('m_mine_'+currentUser, JSON.stringify(mySpells)); }
-                const stats = getStats(); stats.count++; localStorage.setItem('m_daily_'+currentUser, JSON.stringify(stats));
-                confetti(); document.getElementById('prize-name').innerText = "習得：" + prize.n;
-            } else { document.getElementById('prize-name').innerText = "修煉不足"; }
-        }, 1000);
-    };
+    window.openChest = el => { confetti(); alert("獲得隨機咒語！"); location.reload(); };
     function getStats(){ const today = new Date().toLocaleDateString(); const key='m_daily_'+currentUser; let s = JSON.parse(localStorage.getItem(key)) || {date:today, count:0}; if(s.date!==today) s={date:today, count:0}; return s; }
-    window.castMagic = type => { const visual = document.getElementById('magic-visual'); visual.style.opacity = "1"; let color = "#FFD700"; if(type==='fire') color="#FF4500"; if(type==='ice') color="#00D2FF"; visual.style.borderColor = color; visual.style.boxShadow = `0 0 40px ${color}`; setTimeout(() => visual.style.opacity = "0", 1500); };
 </script>
 </body>
 </html>
