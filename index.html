@@ -21,7 +21,7 @@
         /* 相機 */
         .camera-container { position: relative; width: 100%; height: 260px; background: #000; border-radius: 20px; overflow: hidden; margin: 15px 0; border: 2px solid var(--m-blue); }
         #video { width: 100%; height: 100%; object-fit: cover; }
-        .viewfinder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 90px; border: 3px solid var(--m-gold); border-radius: 10px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none; }
+        .viewfinder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 120px; border: 3px solid var(--m-gold); border-radius: 10px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none; }
 
         .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; box-sizing: border-box; }
         .btn-gold { background: linear-gradient(45deg, var(--m-gold), #FFA500); color: black !important; }
@@ -163,11 +163,34 @@
         const resText = document.getElementById('result-text');
         const btn = document.getElementById('detect-btn');
 
-        // 1. 拍照並裁剪 (針對方框)
+        // 1. 拍照並裁剪 (針對方框) - 修正座標換算
         const vw = v.videoWidth, vh = v.videoHeight;
-        c.width = 600; c.height = 200;
-        ctx.drawImage(v, (vw*0.1), (vh*0.35), vw*0.8, vh*0.3, 0, 0, 600, 200);
-        const photo = c.toDataURL('image/jpeg', 0.8);
+        // viewfinder 在顯示畫面是 85% 寬、90px 高，垂直置中
+        // 需把「顯示座標」換算回「video stream 座標」
+        const displayH = v.clientHeight;   // video 元素實際顯示高度
+        const displayW = v.clientWidth;
+        // video 是 object-fit:cover，計算實際縮放比例
+        const scaleX = vw / displayW;
+        const scaleY = vh / displayH;
+        const scale = Math.max(scaleX, scaleY); // cover 取較大值
+        // viewfinder: 寬85%、高90px，垂直水平置中
+        const vfW_disp = displayW * 0.85;
+        const vfH_disp = 120;
+        const vfX_disp = (displayW - vfW_disp) / 2;
+        const vfY_disp = (displayH - vfH_disp) / 2;
+        // 轉換到 video stream 座標（考慮 cover 偏移）
+        const offsetX = (vw - displayW * scale) / 2;
+        const offsetY = (vh - displayH * scale) / 2;
+        const srcX = offsetX + vfX_disp * scale;
+        const srcY = offsetY + vfY_disp * scale;
+        const srcW = vfW_disp * scale;
+        const srcH = vfH_disp * scale;
+        // 輸出放大到 900x300 提升辨識率
+        c.width = 900; c.height = 300;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 900, 300);
+        ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, 900, 300);
+        const photo = c.toDataURL('image/jpeg', 0.95);
 
         // 2. UI 狀態
         document.getElementById('loader').style.display = 'flex';
@@ -177,7 +200,7 @@
             // 使用 Gemini 2.0 Flash 正式版網址
             const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
             const payload = { contents: [{ parts: [
-                { text: `你是繁體中文鑑定師。辨識手寫字。目標是「${challenges[currentIdx]}」。若正確回傳「正確」，若不正確回傳看到的字。只回傳結果。` },
+                { text: `你是繁體中文手寫辨識專家。請仔細辨識圖片中的手寫繁體中文字，目標答案是「${challenges[currentIdx]}」。\n判斷規則：若圖片中寫的字和目標答案相同（允許字體潦草），回傳「正確」；否則回傳你實際看到的字。\n只回傳「正確」或你看到的字，不要其他說明。` },
                 { inline_data: { mime_type: "image/jpeg", data: photo.split(',')[1] } }
             ] }] };
 
