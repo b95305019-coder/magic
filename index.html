@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V59 - 自動修復版</title>
+    <title>魔法大師 V60 - 聖光守護版</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --m-purple: #1A1A2E; --m-gold: #FFD700; --m-blue: #00D2FF; --m-deep: #16213E; --m-red: #FF3B30; --m-parchment: #fdf5e6; }
@@ -12,7 +12,7 @@
         .page.active { display: flex; }
         .wizard-icon { font-size: 60px; text-align: center; margin: 10px 0; filter: drop-shadow(0 0 10px var(--m-blue)); animation: float 3s infinite; }
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
-        .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 100px; }
+        .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 4px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 100px; }
         .word-display { font-size: 60px; font-weight: 900; letter-spacing: 8px; color: #222; }
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
         .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -25,9 +25,9 @@
         .btn-outline { background: transparent; border: 2px solid var(--m-blue); color: white !important; }
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .progress-fill { width: 0%; height: 100%; background: var(--m-gold); transition: width 0.5s ease; }
-        .progress-fill.waiting { background: var(--m-red); }
+        .progress-fill.waiting { background: var(--m-red); transition: width 1s linear; }
         .review-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin-bottom: 12px; display: flex; align-items: center; }
-        .preview-img { width: 80px; height: 50px; object-fit: contain; background: #fff; border-radius: 5px; border: 1px solid var(--m-gold); }
+        .preview-img { width: 80px; height: 50px; object-fit: contain; background: #fff; border-radius: 5px; border: 1px solid var(--m-gold); cursor: zoom-in; }
         .detected-tag { background: #000; color: #FFD700; padding: 2px 6px; border-radius: 4px; font-size: 14px; margin-top: 5px; display: inline-block; }
         #zoom-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index: 9999; display:none; align-items:center; justify-content:center; }
         #zoom-modal img { max-width: 95%; max-height: 85%; border: 2px solid white; }
@@ -46,12 +46,11 @@
     <p id="progress-status" style="font-size: 14px; color: #aaa;">0 / 0</p>
 </div>
 
-<!-- 1. 登入 -->
 <div id="page-intro" class="page active">
     <div class="wizard-icon">🧙‍♂️</div>
-    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：V59 穩定版</h2>
+    <h2 style="text-align: center; color: var(--m-gold); margin: 0;">真理之書：V60 穩定版</h2>
     <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin:20px 0;">
-        <p style="font-size:12px; margin:0 0 8px 0; color: var(--m-blue);">🔑 貼上您的 Gemini API Key：</p>
+        <p style="font-size:12px; margin:0 0 8px 0; color: var(--m-blue);">🔑 魔法通行證 (API Key)：</p>
         <input type="text" id="api-key-input" placeholder="AIza..." style="width:100%; padding:12px; border-radius:8px; border:none; box-sizing:border-box; font-size:14px; background:#fff; color:#000;">
     </div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -61,9 +60,8 @@
     </div>
 </div>
 
-<!-- 2. 圖鑑 -->
 <div id="page-home" class="page">
-    <div style="display:flex; justify-content: space-between; align-items: center;">
+    <div style="display:flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <h3 style="color: var(--m-gold); margin: 0;">📜 <span id="display-user"></span>的圖鑑</h3>
         <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:white; padding:5px; border-radius:5px; font-size:10px;">登出</button>
     </div>
@@ -72,7 +70,6 @@
     <div style="margin-top: 15px;"><button id="start-btn" class="btn btn-gold" onclick="window.showPage('page-mode-select')">⚔️ 開始試煉</button></div>
 </div>
 
-<!-- 3. 模式選擇 -->
 <div id="page-mode-select" class="page">
     <h2 style="text-align: center; color: var(--m-gold);">選擇模式</h2>
     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px;">
@@ -82,7 +79,6 @@
     <button class="btn btn-outline" onclick="showPage('page-home')">返回</button>
 </div>
 
-<!-- 4. 拍照 -->
 <div id="page-collect" class="page">
     <div style="display:flex; justify-content: space-between;"><span id="progress-label">1 / 10</span><button onclick="stopCameraAndHome()">✕</button></div>
     <div class="magic-card" style="margin-top:10px;">
@@ -94,7 +90,6 @@
     <button id="btn-next" class="btn btn-outline" style="margin-top:auto;" onclick="nextStep()">下一題</button>
 </div>
 
-<!-- 5. 鑑定室 -->
 <div id="page-review" class="page">
     <h3 style="text-align: center; color: var(--m-gold);">🔍 鑑定中心</h3>
     <div id="review-list" class="review-list" style="flex-grow: 1; overflow-y: auto;"></div>
@@ -102,7 +97,6 @@
     <button id="final-btn" class="btn btn-gold" style="display:none;" onclick="finishReview()">🔓 結算成果</button>
 </div>
 
-<!-- 6. 寶箱 -->
 <div id="page-treasure" class="page">
     <h2 style="text-align: center; color: var(--m-gold);">🎁 藏寶室</h2>
     <div id="chest-zone" style="display: flex; justify-content: space-around; margin-top: 40px;">
@@ -116,7 +110,7 @@
 <canvas id="proc-canvas" style="display:none;"></canvas>
 
 <script>
-    const defaultSpells = [{n:"火球術",t:"fire"},{n:"冰晶陣",t:"ice"},{n:"雷神怒",t:"light"},{n:"風之翼",t:"wind"},{n:"地動波",t:"earth"},{n:"聖光盾",t:"shield"},{n:"絕對零度",t:"ice"},{n:"太陽射線",t:"fire"},{n:"連鎖閃電",t:"light"},{n:"萬象星隕",t:"fire"},{n:"極地風暴",t:"ice"},{n:"霹靂一擊",t:"light"}];
+    const defaultSpells = [{n:"火球術",t:"fire"},{n:"冰晶陣",t:"ice"},{n:"雷神怒",t:"light"},{n:"風之翼",t:"wind"},{n:"地動波",t:"earth"},{n:"聖光盾",t:"shield"},{n:"絕對零度",t:"ice"},{n:"太陽射線",t:"fire"},{n:"連鎖閃電",t:"light"},{n:"萬象星隕",t:"fire"},{n:"極地風暴",t:"ice"},{n:"霹靂一擊",t:"light"},{n:"金石之軀",t:"earth"},{n:"雷鳴爆破",t:"light"},{n:"龍捲狂襲",t:"wind"}];
     const officialWords = {
         "小鈞": ["畫畫", "送給", "一顆", "寫下", "祝福", "一張", "可愛", "笑臉", "感謝", "老師", "啊", "還要", "漂亮", "蛋糕"],
         "小緁": ["傘", "烏雲", "天色暗", "爺爺", "猜字", "謎語", "撐開", "屋頂", "柺杖", "滴滴答答", "叩", "嘻嘻哈哈", "落下來", "大街", "答案", "園丁", "公園", "每天", "認真", "比", "遊客", "相當", "高興", "拍照", "草皮", "摘花", "立布告牌", "各位", "重新", "它", "欣賞", "奇妙"],
@@ -141,7 +135,7 @@
         showPage('page-home');
     };
 
-    // --- 核心改動：帶有自動重試功能的 AI 鑑定 ---
+    // --- 核心更新：更保守的鑑定邏輯與冷卻 ---
     window.startGeminiAI = async function() {
         const key = localStorage.getItem('gemini_api_key_v2');
         const loader = document.getElementById('loader');
@@ -152,7 +146,6 @@
         document.getElementById('btn-ai-start').style.display = 'none';
 
         for(let i=0; i<workbook.length; i++){
-            let retryCount = 0;
             let identified = false;
 
             while(!identified) {
@@ -164,7 +157,7 @@
                 try {
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
                     const payload = { contents: [{ parts: [
-                        { text: `辨識手寫字「${workbook[i].word}」。正確回傳「正確」，錯誤回傳看到的字。` },
+                        { text: `辨識手寫字「${workbook[i].word}」。正確回傳「正確」，錯誤回傳看到的字。不要多餘解釋。` },
                         { inline_data: { mime_type: "image/jpeg", data: workbook[i].rawPhoto.split(',')[1] } }
                     ] }] };
 
@@ -173,13 +166,13 @@
                     
                     if (json.error) {
                         if(json.error.code === 429) {
-                            // 觸發限速，開始倒數重試
+                            // 觸發限速，增加冷卻時間到 45 秒
                             progressFill.classList.add('waiting');
-                            for(let sec=20; sec>0; sec--) {
-                                loaderText.innerHTML = `魔法能量補充中...<br><span style="color:#FF3B30;font-size:24px;">休息 ${sec} 秒後自動重試</span>`;
+                            for(let sec=45; sec>0; sec--) {
+                                loaderText.innerHTML = `魔法能量不足！<br><span style="color:#FF3B30;font-size:24px;">冥想 ${sec} 秒後繼續...</span>`;
                                 await new Promise(r => setTimeout(r, 1000));
                             }
-                            continue; // 跳回 while 開頭重試
+                            continue; 
                         }
                         throw new Error(json.error.message);
                     }
@@ -190,11 +183,14 @@
                     identified = true;
                     renderReview();
 
-                    // 每題成功後固定休息 2 秒，降低被鎖機率
-                    await new Promise(r => setTimeout(r, 2000));
+                    // 每題成功後強制休息 6 秒（極限安全距離）
+                    if (i < workbook.length - 1) {
+                        loaderText.innerText = `鑑定完成，準備下一題...`;
+                        await new Promise(r => setTimeout(r, 6000));
+                    }
 
                 } catch (e) {
-                    alert("連線中斷：" + e.message);
+                    alert("連線失敗：" + e.message);
                     loader.style.display = 'none';
                     document.getElementById('btn-ai-start').style.display = 'block';
                     return;
@@ -204,18 +200,18 @@
         loader.style.display = 'none';
     };
 
-    // --- 其餘穩定邏輯 ---
+    // --- 其餘邏輯 ---
     window.showPage = id => { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'page-home') renderHome(); };
-    window.renderHome = () => { const grid = document.getElementById('tome-grid'); grid.innerHTML = ''; defaultSpells.forEach(s => { const has = mySpells.some(m => m.n === s.n); const div = document.createElement('div'); div.className = 'scroll-icon'; div.style.opacity = has ? "1" : "0.2"; div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div); }); const stats = getDailyStats(); document.getElementById('daily-energy').innerText = `${3 - stats.count} / 3`; };
+    window.renderHome = () => { const grid = document.getElementById('tome-grid'); grid.innerHTML = ''; defaultSpells.forEach(s => { const has = mySpells.find(m => m.n === s.n); const div = document.createElement('div'); div.className = 'scroll-icon'; div.style.opacity = has ? "1" : "0.2"; div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div); }); const stats = getDailyStats(); document.getElementById('daily-energy').innerText = `${3 - stats.count} / 3`; };
     window.startGame = m => { currentMode = m; let pool = officialWords[currentUser] || []; let avail = pool.filter(w => !usedWords.includes(w)); if (avail.length < maxChallenges) { usedWords = []; avail = pool; } challenges = avail.sort(() => 0.5 - Math.random()).slice(0, maxChallenges); usedWords = [...usedWords, ...challenges]; localStorage.setItem('m_used_'+currentUser, JSON.stringify(usedWords)); currentIdx = 0; workbook = []; showPage('page-collect'); startCamera(); updateUI(); };
     function updateUI() { document.getElementById('progress-label').innerText = `試煉 ${currentIdx+1} / ${maxChallenges}`; document.getElementById('target-word').innerText = challenges[currentIdx]; if (currentMode === 'dictation') { document.getElementById('ui-dictation').style.display = 'block'; document.getElementById('ui-copying').style.display = 'none'; setTimeout(() => window.speakCurrentWord(), 500); } else { document.getElementById('ui-dictation').style.display = 'none'; document.getElementById('ui-copying').style.display = 'block'; } }
     window.nextStep = () => { if(!workbook[currentIdx]) return alert("請先記錄符文"); if(currentIdx < maxChallenges - 1) { currentIdx++; updateUI(); } else { if(stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; } showPage('page-review'); renderReview(); } };
     async function startCamera() { if(stream) return; try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 1280 } }); document.getElementById('video').srcObject = stream; } catch (e) { alert("相機啟動失敗"); } }
-    window.snap符文 = () => { const v = document.getElementById('video'), c = document.getElementById('proc-canvas'), ctx = c.getContext('2d'); c.width = 600; c.height = 200; ctx.drawImage(v, (v.videoWidth*0.1), (v.videoHeight*0.35), v.videoWidth*0.8, v.videoHeight*0.3, 0, 0, 600, 200); workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: c.toDataURL('image/jpeg', 0.8), status: null }; document.body.insertAdjacentHTML('beforeend', '<div id="t" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--m-blue);padding:10px 20px;border-radius:20px;z-index:9999;">✨ 符文錄製成功</div>'); setTimeout(() => document.getElementById('t').remove(), 1000); };
+    window.snap符文 = () => { const v = document.getElementById('video'), c = document.getElementById('proc-canvas'), ctx = c.getContext('2d'); c.width = 600; c.height = 200; ctx.drawImage(v, (v.videoWidth*0.1), (v.videoHeight*0.35), v.videoWidth*0.8, v.videoHeight*0.3, 0, 0, 600, 200); workbook[currentIdx] = { word: challenges[currentIdx], rawPhoto: c.toDataURL('image/jpeg', 0.8), status: null }; document.body.insertAdjacentHTML('beforeend', '<div id="t" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--m-blue);padding:10px 20px;border-radius:20px;z-index:9999;">✨ 已記錄</div>'); setTimeout(() => document.getElementById('t').remove(), 1000); };
     function renderReview() { const list = document.getElementById('review-list'); list.innerHTML = ''; workbook.forEach((item, i) => { const div = document.createElement('div'); div.className = 'review-item'; let icon = item.status === true ? '✅' : (item.status === false ? '❌' : '⏳'); div.innerHTML = `<img src="${item.rawPhoto}" class="preview-img" onclick="window.openZoom(this.src)"><div style="flex:1;margin-left:10px;"><b>${item.word}</b><br><span class="detected-tag">${item.detectedText||'等待'}</span><br><button onclick="window.manual(${i}, ${!item.status})" style="font-size:10px;background:#555;color:#fff;border:none;padding:4px;border-radius:4px;">${item.status?'取消':'通過'}</button></div><div style="font-size:20px">${icon}</div>`; list.appendChild(div); }); document.getElementById('final-btn').style.display = workbook.every(i=>i.status!==null) ? 'block' : 'none'; }
     window.manual = (i,s) => { workbook[i].status = s; renderReview(); };
     window.finishReview = () => { chestLocked = false; showPage('page-treasure'); };
-    window.openChest = el => { if(chestLocked) return; chestLocked = true; el.style.animation = "shake 0.5s 2"; const score = workbook.filter(i => i.status === true).length; setTimeout(() => { document.getElementById('chest-zone').style.display = 'none'; document.getElementById('prize-reveal').style.display = 'block'; if (score >= maxChallenges*0.8) { const prize = defaultSpells[Math.floor(Math.random()*defaultSpells.length)]; if(!mySpells.some(m=>m.n===prize.n)) { mySpells.push(prize); localStorage.setItem('m_mine_'+currentUser, JSON.stringify(mySpells)); } const stats = getStats(); stats.count++; localStorage.setItem('m_daily_'+currentUser, JSON.stringify(stats)); confetti(); document.getElementById('prize-name').innerText = "獲得：" + prize.n; } else { document.getElementById('prize-name').innerText = "修煉不足"; } }, 1000); };
+    window.openChest = el => { if(chestLocked) return; chestLocked = true; el.style.animation = "shake 0.5s 2"; const score = workbook.filter(i => i.status === true).length; setTimeout(() => { document.getElementById('chest-zone').style.display = 'none'; document.getElementById('prize-reveal').style.display = 'block'; if (score >= maxChallenges*0.8) { const prize = defaultSpells[Math.floor(Math.random()*defaultSpells.length)]; if(!mySpells.some(m=>m.n===prize.n)) { mySpells.push(prize); localStorage.setItem('m_mine_'+currentUser, JSON.stringify(mySpells)); } const stats = getStats(); stats.count++; localStorage.setItem('m_daily_'+currentUser, JSON.stringify(stats)); confetti(); document.getElementById('prize-name').innerText = "獲得：" + prize.n; } else { document.getElementById('prize-name').innerText = "修煉不足"; } }, 800); };
     function getDailyStats() { const today = new Date().toLocaleDateString(); const key = 'm_daily_' + currentUser; let stats = { date: today, count: 0 }; try { const data = localStorage.getItem(key); if(data) { const p = JSON.parse(data); if(p.date === today) stats = p; } } catch(e) {} return stats; }
     window.speakWord = t => { const m = new SpeechSynthesisUtterance(t); m.lang='zh-TW'; speechSynthesis.speak(m); };
     window.speakCurrentWord = () => window.speakWord(challenges[currentIdx]);
