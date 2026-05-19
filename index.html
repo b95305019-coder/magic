@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>魔法大師 V66 - Gemini 2.0 即時鑑定</title>
+    <title>魔法大師 V66 - Gemini 2.5 即時鑑定</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --m-purple: #1A1A2E; --m-gold: #FFD700; --m-blue: #00D2FF; --m-deep: #16213E; --m-red: #FF3B30; --m-parchment: #fdf5e6; }
@@ -39,7 +39,7 @@
 
 <div id="loader" class="loader">
     <div style="border: 4px solid #333; border-top: 4px solid var(--m-gold); width: 40px; height: 40px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <p style="margin-top:15px; color:var(--m-gold); font-weight: bold;">🔍 Gemini 2.0 鑑定中...</p>
+    <p style="margin-top:15px; color:var(--m-gold); font-weight: bold;">🔍 Gemini 2.5 鑑定中...</p>
 </div>
 
 <!-- 1. 登入 -->
@@ -198,7 +198,7 @@
 
         try {
             // 使用 Gemini 2.0 Flash 正式版網址
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
             const payload = { contents: [{ parts: [
                 { text: `你是繁體中文手寫辨識專家。請仔細辨識圖片中的手寫繁體中文字，目標答案是「${challenges[currentIdx]}」。\n判斷規則：若圖片中寫的字和目標答案相同（允許字體潦草），回傳「正確」；否則回傳你實際看到的字。\n只回傳「正確」或你看到的字，不要其他說明。` },
                 { inline_data: { mime_type: "image/jpeg", data: photo.split(',')[1] } }
