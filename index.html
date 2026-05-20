@@ -17,6 +17,12 @@
         .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
         .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .scroll-icon b { margin-top: 5px; color: var(--m-gold); display: block; width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        .sprite-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 6px 4px; text-align: center; font-size: 8px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .sprite-icon.owned { background: rgba(255,215,0,0.12); border-color: var(--m-gold); box-shadow: 0 0 8px rgba(255,215,0,0.3); }
+        .sprite-icon .sprite-emoji { font-size: 26px; line-height: 1; }
+        .sprite-icon .sprite-name { margin-top: 4px; color: var(--m-gold); display: block; width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-size: 8px; font-weight: bold; }
+        .sprite-icon.owned .sprite-emoji { animation: float 3s infinite; }
+        @keyframes sparkle { 0%,100%{filter:drop-shadow(0 0 2px gold)} 50%{filter:drop-shadow(0 0 8px gold)} }
 
         /* 相機 */
         .camera-container { position: relative; width: 100%; height: 260px; background: #000; border-radius: 20px; overflow: hidden; margin: 15px 0; border: 2px solid var(--m-blue); }
@@ -75,10 +81,18 @@
 <!-- 2. 圖鑑 -->
 <div id="page-home" class="page">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>📜 <span id="display-user"></span>的圖鑑</h3>
+        <h3>🧚 <span id="display-user"></span>的精靈圖鑑</h3>
         <button onclick="location.reload()">登出</button>
     </div>
-    <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span></div>
+    <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span> &nbsp;｜&nbsp; 🧚 已收服：<span id="owned-count">0</span> / 50</div>
+
+    <!-- 篩選標籤 -->
+    <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button id="tab-all" onclick="setTab('all')" style="flex:1; padding:8px; border-radius:10px; border:2px solid var(--m-gold); background:var(--m-gold); color:black; font-weight:bold; cursor:pointer; font-size:13px;">全部</button>
+        <button id="tab-owned" onclick="setTab('owned')" style="flex:1; padding:8px; border-radius:10px; border:2px solid var(--m-gold); background:transparent; color:var(--m-gold); font-weight:bold; cursor:pointer; font-size:13px;">已收藏</button>
+        <button id="tab-missing" onclick="setTab('missing')" style="flex:1; padding:8px; border-radius:10px; border:2px solid rgba(255,255,255,0.3); background:transparent; color:rgba(255,255,255,0.6); font-weight:bold; cursor:pointer; font-size:13px;">未收服</button>
+    </div>
+
     <div id="tome-grid" class="tome-grid"></div>
     <div style="margin-top:15px;"><button id="start-btn" class="btn btn-gold" onclick="window.showPage('page-mode-select')">⚔️ 開始挑戰</button></div>
 </div>
@@ -138,7 +152,9 @@
         <div class="chest" style="font-size:60px; cursor:pointer;" onclick="openChest(this)">📦</div>
     </div>
     <div id="prize-reveal" style="display:none; text-align:center; margin-top:20px;">
-        <h1 id="prize-name">...</h1>
+        <div id="prize-sprite" style="font-size:80px; animation: float 2s infinite; filter: drop-shadow(0 0 15px gold);"></div>
+        <h1 id="prize-name" style="color:var(--m-gold);">...</h1>
+        <p id="prize-type" style="color:rgba(255,255,255,0.6); margin:0 0 15px;"></p>
         <button class="btn btn-gold" onclick="location.reload()">領取成功</button>
     </div>
 </div>
@@ -147,15 +163,20 @@
 
 <script>
     const defaultSpells = [
-        {n:"火球術",t:"fire"},{n:"冰晶陣",t:"ice"},{n:"雷神怒",t:"light"},{n:"風之翼",t:"wind"},{n:"地動波",t:"earth"},{n:"聖光盾",t:"shield"},
-        {n:"炎爆術",t:"fire"},{n:"絕對零度",t:"ice"},{n:"連鎖閃電",t:"light"},{n:"萬象星隕",t:"fire"},{n:"餘燼之握",t:"fire"},{n:"極地風暴",t:"ice"},
-        {n:"霹靂一擊",t:"light"},{n:"龍捲狂襲",t:"wind"},{n:"金石之軀",t:"earth"},{n:"太陽射線",t:"fire"},{n:"霜凍新星",t:"ice"},
-        {n:"雷霆萬鈞",t:"light"},{n:"雲隱術",t:"wind"},{n:"流沙領域",t:"earth"},{n:"天使之淚",t:"light"},{n:"鳳凰涅槃",t:"fire"},
-        {n:"冰牆術",t:"ice"},{n:"電光火石",t:"light"},{n:"疾風之怒",t:"wind"},{n:"地裂震波",t:"earth"},{n:"聖潔光輝",t:"shield"}
+        {n:"火焰小妖",t:"火系",e:"🔥"},{n:"冰雪精靈",t:"冰系",e:"❄️"},{n:"雷電小精",t:"雷系",e:"⚡"},{n:"風語者",t:"風系",e:"🌪️"},{n:"土地守護",t:"土系",e:"🪨"},
+        {n:"星光仙子",t:"光系",e:"⭐"},{n:"月影幽靈",t:"暗系",e:"🌙"},{n:"水晶蝶精",t:"冰系",e:"🦋"},{n:"森林小鬼",t:"自然",e:"🌿"},{n:"花仙子",t:"自然",e:"🌸"},
+        {n:"彩虹精靈",t:"光系",e:"🌈"},{n:"雲朵小妖",t:"風系",e:"☁️"},{n:"火山小怪",t:"火系",e:"🌋"},{n:"海洋仙靈",t:"水系",e:"🌊"},{n:"沙漠精怪",t:"土系",e:"🏜️"},
+        {n:"夜星小精",t:"暗系",e:"🌟"},{n:"蘑菇小妖",t:"自然",e:"🍄"},{n:"南瓜精靈",t:"自然",e:"🎃"},{n:"雪花小仙",t:"冰系",e:"🌨️"},{n:"太陽精靈",t:"火系",e:"☀️"},
+        {n:"紫晶守衛",t:"光系",e:"💜"},{n:"翠玉小精",t:"自然",e:"💚"},{n:"紅寶仙子",t:"火系",e:"❤️"},{n:"藍鑽精靈",t:"冰系",e:"💙"},{n:"金砂小怪",t:"土系",e:"✨"},
+        {n:"龍爪幼靈",t:"龍系",e:"🐉"},{n:"鳳凰小精",t:"火系",e:"🦅"},{n:"獨角獸精",t:"光系",e:"🦄"},{n:"飛馬小妖",t:"風系",e:"🐎"},{n:"貓眼精靈",t:"暗系",e:"🐱"},
+        {n:"蛙雨小精",t:"水系",e:"🐸"},{n:"蝸牛幽靈",t:"自然",e:"🐌"},{n:"蜜蜂小妖",t:"自然",e:"🐝"},{n:"蝴蝶精靈",t:"風系",e:"🪽"},{n:"螢火幼靈",t:"光系",e:"🪲"},
+        {n:"蘑雲小鬼",t:"暗系",e:"👾"},{n:"泡泡精靈",t:"水系",e:"🫧"},{n:"音符小妖",t:"光系",e:"🎵"},{n:"魔方精怪",t:"暗系",e:"🔮"},{n:"彗星小仙",t:"光系",e:"☄️"},
+        {n:"苔蘚守護",t:"自然",e:"🌱"},{n:"迷霧幽靈",t:"暗系",e:"👻"},{n:"閃光小精",t:"雷系",e:"💫"},{n:"熔岩守衛",t:"火系",e:"🫠"},{n:"冰霜精靈",t:"冰系",e:"🧊"},
+        {n:"颶風小怪",t:"風系",e:"🌀"},{n:"石英幼靈",t:"土系",e:"💎"},{n:"河川小仙",t:"水系",e:"💧"},{n:"黎明精靈",t:"光系",e:"🌅"},{n:"黃昏小妖",t:"暗系",e:"🌆"}
     ];
     const officialWords = {
-        "小鈞":["畫畫","送給","一顆","寫下","祝福","一張","可愛","笑臉","感謝","老師","啊","還要","漂亮","蛋糕"],
-        "小緁":["傘","烏雲","天色暗","爺爺","猜字","謎語","撐開","屋頂","柺杖","滴滴答答","叩","嘻嘻哈哈","落下來","大街","答案","園丁","公園","每天","認真","比","遊客","相當","高興","拍照","草皮","摘花","立布告牌","各位","重新","它","欣賞","奇妙"],
+        "小鈞":["青蛙","水井裡","一隻","除了","睡覺","吃東西","拍著","肚子","說大話","唉","一窪","幾天","世界","連忙","裝不下"],
+        "小緁":["安排","介紹","其中","賣帽子","戴著","蛋糕","扶著","休息","猴子","拿","一會兒","精采","希望","讀"],
         "小凱":["測試","成功"]
     };
 
@@ -186,17 +207,79 @@
         if (id === 'page-home') renderHome();
     };
 
+    let currentTab = 'all';
+
+    window.setTab = (tab) => {
+        currentTab = tab;
+        const tabs = { all: '#tab-all', owned: '#tab-owned', missing: '#tab-missing' };
+        Object.entries(tabs).forEach(([key, sel]) => {
+            const el = document.querySelector(sel);
+            if (key === tab) {
+                el.style.background = 'var(--m-gold)'; el.style.color = 'black';
+                el.style.borderColor = 'var(--m-gold)';
+            } else {
+                el.style.background = 'transparent';
+                el.style.color = key === 'owned' ? 'var(--m-gold)' : 'rgba(255,255,255,0.6)';
+                el.style.borderColor = key === 'owned' ? 'var(--m-gold)' : 'rgba(255,255,255,0.3)';
+            }
+        });
+        renderHome();
+    };
+
     window.renderHome = () => {
         const grid = document.getElementById('tome-grid'); grid.innerHTML = '';
-        defaultSpells.forEach(s => {
+        const ownedCount = defaultSpells.filter(s => mySpells.some(m => m.n === s.n)).length;
+        document.getElementById('owned-count').innerText = ownedCount;
+
+        const list = defaultSpells.filter(s => {
             const has = mySpells.some(m => m.n === s.n);
-            const div = document.createElement('div'); div.className = 'scroll-icon';
-            div.style.opacity = has ? "1" : "0.2";
-            div.innerHTML = `📜<br>${s.n}`; grid.appendChild(div);
+            if (currentTab === 'owned') return has;
+            if (currentTab === 'missing') return !has;
+            return true;
         });
+
+        if (list.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:rgba(255,255,255,0.4); padding:40px 0; font-size:14px;">
+                ${currentTab === 'owned' ? '還沒有收服任何精靈，快去挑戰吧！🧚' : '太厲害了！50隻精靈全部收服！🎉'}
+            </div>`;
+        } else {
+            list.forEach(s => {
+                const has = mySpells.some(m => m.n === s.n);
+                const div = document.createElement('div');
+                div.className = 'sprite-icon' + (has ? ' owned' : '');
+                div.style.opacity = has ? "1" : "0.25";
+                div.innerHTML = `<span class="sprite-emoji">${has ? s.e : '❓'}</span><span class="sprite-name">${has ? s.n : '???'}</span>`;
+                if (has) {
+                    div.title = `${s.n}｜${s.t}系`;
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => showSpriteDetail(s);
+                }
+                grid.appendChild(div);
+            });
+        }
+
         const stats = getDailyStats();
         document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3";
         document.getElementById('start-btn').disabled = (stats.count >= 3);
+    };
+
+    window.showSpriteDetail = (s) => {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `
+            <div style="background:var(--m-deep);border:2px solid var(--m-gold);border-radius:20px;padding:40px 30px;text-align:center;max-width:280px;width:90%;">
+                <div style="font-size:80px;animation:float 2s infinite;">${s.e}</div>
+                <h2 style="color:var(--m-gold);margin:10px 0 5px;">${s.n}</h2>
+                <div style="background:rgba(255,215,0,0.15);border-radius:10px;padding:8px 16px;display:inline-block;margin-bottom:20px;">
+                    <span style="color:rgba(255,255,255,0.7);font-size:13px;">屬性</span>
+                    <span style="color:var(--m-gold);font-weight:bold;margin-left:8px;">${s.t}系</span>
+                </div>
+                <br>
+                <button onclick="this.closest('div[style]').remove()" style="padding:12px 30px;border-radius:12px;border:2px solid var(--m-gold);background:transparent;color:var(--m-gold);font-size:16px;font-weight:bold;cursor:pointer;">關閉</button>
+            </div>
+        `;
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        document.body.appendChild(modal);
     };
 
     window.startGame = mode => {
@@ -437,21 +520,30 @@
     window.openChest = el => {
         if (chestLocked) return; chestLocked = true;
         const stats = getDailyStats();
+        el.innerText = '🎊';
         setTimeout(() => {
             document.getElementById('chest-zone').style.display = 'none';
             document.getElementById('prize-reveal').style.display = 'block';
             if (score >= maxChallenges * 0.8) {
-                const prize = defaultSpells[Math.floor(Math.random() * defaultSpells.length)];
-                if (!mySpells.some(m => m.n === prize.n)) {
+                // 從還沒收集的精靈中隨機選
+                const unowned = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n));
+                const pool = unowned.length > 0 ? unowned : defaultSpells;
+                const prize = pool[Math.floor(Math.random() * pool.length)];
+                const isNew = !mySpells.some(m => m.n === prize.n);
+                if (isNew) {
                     mySpells.push(prize);
                     localStorage.setItem('m_mine_' + currentUser, JSON.stringify(mySpells));
                 }
                 stats.count++;
                 localStorage.setItem('m_daily_' + currentUser, JSON.stringify(stats));
-                confetti();
-                document.getElementById('prize-name').innerText = "獲得：" + prize.n;
+                confetti({ particleCount: 120, spread: 80, colors: ['#FFD700','#FF69B4','#00BFFF','#7FFF00'] });
+                document.getElementById('prize-sprite').innerText = prize.e;
+                document.getElementById('prize-name').innerText = (isNew ? '🆕 新精靈！' : '✨ 已收藏') + '「' + prize.n + '」';
+                document.getElementById('prize-type').innerText = '屬性：' + prize.t + '系';
             } else {
+                document.getElementById('prize-sprite').innerText = '😢';
                 document.getElementById('prize-name').innerText = "修煉不足";
+                document.getElementById('prize-type').innerText = '答對 80% 才能收服精靈喔！';
             }
         }, 800);
     };
