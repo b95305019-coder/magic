@@ -52,6 +52,11 @@
         .result-row .verdict { font-size: 22px; flex-shrink: 0; }
         .result-list { overflow-y: auto; flex-grow: 1; }
         .manual-btn { font-size: 11px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--m-blue); background: transparent; color: white; cursor: pointer; flex-shrink: 0; }
+
+        /* 難度指示 */
+        .difficulty-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+        .difficulty-error { background: rgba(255,59,48,0.3); color: #FF6B6B; }
+        .difficulty-new { background: rgba(0,210,255,0.2); color: #00D2FF; }
     </style>
 </head>
 <body>
@@ -100,7 +105,7 @@
 <!-- 3. 模式選擇 -->
 <div id="page-mode-select" class="page">
     <h2 style="text-align:center; color:var(--m-gold);">選擇模式</h2>
-    <div class="btn btn-gold" style="padding:40px;" onclick="startGame('dictation')">🎧 聽寫測驗</div>
+    <div class="btn btn-gold" style="padding:40px;" onclick="startGame('dictation')">🎧 聽寫測驗<span class="difficulty-badge difficulty-new">語速放慢</span></div>
     <div class="btn btn-gold" style="padding:40px; margin-top:20px;" onclick="startGame('copying')">✍️ 照抄測驗</div>
     <button class="btn btn-outline" style="margin-top:auto;" onclick="showPage('page-home')">返回</button>
 </div>
@@ -115,7 +120,7 @@
     <div class="magic-card" style="margin-top:10px;">
         <div id="ui-dictation" style="display:none; text-align:center;">
             <div style="font-size:70px; cursor:pointer;" onclick="window.speakCurrentWord()">🔊</div>
-            <p style="font-size:13px; color:#888; margin:5px 0 0;">點擊喇叭聆聽，在紙上寫好後拍照</p>
+            <p style="font-size:13px; color:#888; margin:5px 0 0;">點擊喇叭聆聽（語速已放慢），在紙上寫好後拍照</p>
         </div>
         <div id="ui-copying" style="display:none;">
             <div id="target-word" class="word-display">...</div>
@@ -180,7 +185,7 @@
         "小凱":["測試","成功"]
     };
 
-    let currentUser="", currentMode="", mySpells=[], usedWords=[], challenges=[];
+    let currentUser="", currentMode="", mySpells=[], usedWords=[], errorWords=[], challenges=[];
     let currentIdx=0, maxChallenges=10, stream=null, chestLocked=false, score=0;
     let capturedPhotos = []; // 存每題照片 dataURL
 
@@ -198,6 +203,7 @@
         document.getElementById('display-user').innerText = name;
         mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
         usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
+        errorWords = JSON.parse(localStorage.getItem('m_error_' + currentUser)) || [];
         showPage('page-home');
     };
 
@@ -282,15 +288,51 @@
         document.body.appendChild(modal);
     };
 
+    // ====== 難度梯次邏輯 ======
     window.startGame = mode => {
         currentMode = mode;
         let pool = officialWords[currentUser] || [];
-        let avail = pool.filter(w => !usedWords.includes(w));
-        if (avail.length < maxChallenges) { usedWords = []; avail = pool; }
-        challenges = avail.sort(() => 0.5 - Math.random()).slice(0, maxChallenges);
-        usedWords = [...usedWords, ...challenges];
+        
+        // 第一優先：錯誤過的題目（需要加強練習）
+        let priorityList = errorWords.filter(w => pool.includes(w));
+        let remaining = pool.filter(w => !errorWords.includes(w) && !usedWords.includes(w));
+        
+        // 如果已使用題目快用完，重置
+        if (remaining.length < maxChallenges && priorityList.length < maxChallenges) {
+            usedWords = [];
+            errorWords = [];
+            priorityList = [];
+            remaining = pool;
+        }
+        
+        // 組合：優先錯誤題 → 新題 → 已使用題（若不足）
+        let selected = [];
+        
+        // 1. 加入錯誤題（隨機排序）
+        selected = [...priorityList].sort(() => 0.5 - Math.random()).slice(0, Math.ceil(maxChallenges * 0.3));
+        
+        // 2. 加入新題（隨機排序）
+        if (selected.length < maxChallenges) {
+            let newWords = remaining.sort(() => 0.5 - Math.random());
+            selected = selected.concat(newWords.slice(0, maxChallenges - selected.length));
+        }
+        
+        // 3. 若仍不足，加入已使用題
+        if (selected.length < maxChallenges) {
+            let recycled = usedWords.filter(w => pool.includes(w) && !selected.includes(w))
+                .sort(() => 0.5 - Math.random());
+            selected = selected.concat(recycled.slice(0, maxChallenges - selected.length));
+        }
+        
+        challenges = selected.slice(0, maxChallenges);
+        
+        // 記錄已使用
+        usedWords = [...usedWords, ...challenges.filter(w => !usedWords.includes(w))];
         localStorage.setItem('m_used_' + currentUser, JSON.stringify(usedWords));
-        currentIdx = 0; score = 0;
+        localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
+        
+        currentIdx = 0;
+        score = 0;
         capturedPhotos = new Array(maxChallenges).fill(null);
         document.getElementById('thumb-strip').innerHTML = '';
         showPage('page-collect');
@@ -311,7 +353,6 @@
         const c = document.getElementById('proc-canvas');
         const ctx = c.getContext('2d');
 
-        // 座標換算（object-fit: cover）
         const vw = v.videoWidth, vh = v.videoHeight;
         const displayW = v.clientWidth, displayH = v.clientHeight;
         const scale = Math.max(vw / displayW, vh / displayH);
@@ -333,15 +374,12 @@
         );
         const dataUrl = c.toDataURL('image/jpeg', 0.85);
 
-        // 閃光
         const flash = document.getElementById('flash');
         flash.style.opacity = '1';
         setTimeout(() => { flash.style.opacity = '0'; }, 120);
 
-        // 存照片
         capturedPhotos[currentIdx] = dataUrl;
 
-        // 加縮圖
         const strip = document.getElementById('thumb-strip');
         let img = document.getElementById('thumb-' + currentIdx);
         if (!img) {
@@ -354,18 +392,16 @@
         img.title = challenges[currentIdx];
         img.onclick = () => { document.getElementById('zoom-img').src = dataUrl; document.getElementById('zoom-modal').style.display = 'flex'; };
 
-        // 下一題 or 完成
         if (currentIdx < maxChallenges - 1) {
             currentIdx++;
             updateUI();
         } else {
-            // 全部拍完 → 停相機 → 送 AI
             stopCamera();
             runAIJudge();
         }
     };
 
-    // ---- 一次送全部照片給 AI（只消耗 1 次 API）----
+    // ---- 一次送全部照片給 AI ----
     async function runAIJudge() {
         const key = localStorage.getItem('gemini_api_key_v2');
         const n = capturedPhotos.length;
@@ -373,7 +409,6 @@
         document.getElementById('loader').style.display = 'flex';
 
         try {
-            // 組合 parts：說明 + 每題（文字標題 + 圖片）
             const parts = [];
             parts.push({ text:
                 `你是繁體中文手寫辨識專家。以下共 ${n} 道題，每題有目標字與一張手寫照片。\n` +
@@ -418,6 +453,14 @@
         results.forEach((r, i) => {
             const correct = r.correct === true;
             if (correct) score++;
+            
+            // 更新錯誤清單
+            if (!correct && !errorWords.includes(challenges[i])) {
+                errorWords.push(challenges[i]);
+            } else if (correct && errorWords.includes(challenges[i])) {
+                errorWords = errorWords.filter(w => w !== challenges[i]);
+            }
+            
             const row = document.createElement('div');
             row.className = 'result-row';
             row.dataset.correct = correct ? '1' : '0';
@@ -431,11 +474,12 @@
             list.appendChild(row);
         });
 
+        localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
         updateReviewSummary();
         showPage('page-review');
     }
 
-    // ---- 人工確認模式（AI 失敗時）----
+    // ---- 人工確認模式 ----
     function showReviewManual() {
         score = 0;
         const list = document.getElementById('result-list');
@@ -462,9 +506,15 @@
     window.manualPass = (idx, btn) => {
         const row = btn.closest('.result-row');
         if (row.dataset.correct === '0') { score++; row.dataset.correct = '1'; }
+        
+        // 從錯誤清單移除
+        if (errorWords.includes(challenges[idx])) {
+            errorWords = errorWords.filter(w => w !== challenges[idx]);
+            localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
+        }
+        
         row.style.borderLeftColor = 'var(--m-gold)';
         row.querySelectorAll('.manual-btn').forEach(b => b.remove());
-        // 若原本有 ❌ 換成 ✅
         const v = row.querySelector('.verdict');
         if (v) v.innerText = '✅';
         else row.innerHTML += `<span class="verdict">✅</span>`;
@@ -474,6 +524,13 @@
     window.manualFail = (idx, btn) => {
         const row = btn.closest('.result-row');
         row.dataset.correct = '0';
+        
+        // 加入錯誤清單
+        if (!errorWords.includes(challenges[idx])) {
+            errorWords.push(challenges[idx]);
+            localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
+        }
+        
         row.style.borderLeftColor = 'var(--m-red)';
         row.querySelectorAll('.manual-btn').forEach(b => b.remove());
         const v = row.querySelector('.verdict');
@@ -499,7 +556,7 @@
         document.getElementById('target-word').innerText = challenges[currentIdx];
         document.getElementById('ui-dictation').style.display = (currentMode === 'dictation' ? 'block' : 'none');
         document.getElementById('ui-copying').style.display = (currentMode === 'copying' ? 'block' : 'none');
-        if (currentMode === 'dictation') setTimeout(() => window.speakWord(challenges[currentIdx]), 400);
+        if (currentMode === 'dictation') setTimeout(() => window.speakCurrentWord(), 400);
     }
 
     function stopCamera() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
@@ -513,7 +570,13 @@
         return s;
     }
 
-    window.speakWord = t => { const m = new SpeechSynthesisUtterance(t); m.lang = 'zh-TW'; speechSynthesis.speak(m); };
+    // ====== 語速修改：放慢1倍 (rate = 0.5) ======
+    window.speakWord = t => { 
+        const m = new SpeechSynthesisUtterance(t); 
+        m.lang = 'zh-TW'; 
+        m.rate = 0.5;  // 放慢1倍（預設 1.0 → 現在 0.5）
+        speechSynthesis.speak(m); 
+    };
     window.speakCurrentWord = () => window.speakWord(challenges[currentIdx]);
     window.openZoom = s => { document.getElementById('zoom-img').src = s; document.getElementById('zoom-modal').style.display = 'flex'; };
 
@@ -525,7 +588,6 @@
             document.getElementById('chest-zone').style.display = 'none';
             document.getElementById('prize-reveal').style.display = 'block';
             if (score >= maxChallenges * 0.8) {
-                // 從還沒收集的精靈中隨機選
                 const unowned = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n));
                 const pool = unowned.length > 0 ? unowned : defaultSpells;
                 const prize = pool[Math.floor(Math.random() * pool.length)];
