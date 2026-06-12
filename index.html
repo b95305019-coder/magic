@@ -91,6 +91,39 @@
     </div>
     <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span> &nbsp;｜&nbsp; 🧚 已收服：<span id="owned-count">0</span> / 50</div>
 
+    <!-- 📊 完成度儀表板 -->
+    <div id="progress-dashboard" style="background: linear-gradient(135deg, rgba(0,210,255,0.15), rgba(255,215,0,0.1)); border: 2px solid var(--m-blue); border-radius: 15px; padding: 15px; margin-bottom: 15px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0; color:var(--m-blue);">📊 本輪練習進度</h4>
+            <span id="progress-round" style="font-size:12px; color:rgba(255,255,255,0.6);">第 ? 輪</span>
+        </div>
+        
+        <div style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                <span style="color:rgba(255,255,255,0.8);">已練習：<span id="used-count" style="color:var(--m-gold); font-weight:bold;">0</span> / <span id="total-count" style="color:var(--m-gold); font-weight:bold;">100</span> 題</span>
+                <span id="progress-pct" style="color:var(--m-blue); font-weight:bold;">0%</span>
+            </div>
+            <div style="width:100%; height:10px; background:rgba(255,255,255,0.1); border-radius:5px; overflow:hidden;">
+                <div id="progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--m-blue), var(--m-gold)); border-radius:5px; transition:width 0.3s;"></div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
+            <div style="background:rgba(0,210,255,0.1); border-left:3px solid var(--m-blue); padding:8px; border-radius:6px;">
+                <div style="color:rgba(255,255,255,0.6);">✅ 正確題</div>
+                <div style="font-size:18px; font-weight:bold; color:var(--m-blue);" id="correct-count">0</div>
+            </div>
+            <div style="background:rgba(255,59,48,0.1); border-left:3px solid var(--m-red); padding:8px; border-radius:6px;">
+                <div style="color:rgba(255,255,255,0.6);">❌ 錯誤題</div>
+                <div style="font-size:18px; font-weight:bold; color:var(--m-red);" id="error-count">0</div>
+            </div>
+        </div>
+
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:11px; color:rgba(255,255,255,0.5);">
+            💡 <span id="progress-hint">再練習 ? 題即可完成本輪</span>
+        </div>
+    </div>
+
     <!-- 篩選標籤 -->
     <div style="display:flex; gap:8px; margin-bottom:8px;">
         <button id="tab-all" onclick="setTab('all')" style="flex:1; padding:8px; border-radius:10px; border:2px solid var(--m-gold); background:var(--m-gold); color:black; font-weight:bold; cursor:pointer; font-size:13px;">全部</button>
@@ -205,6 +238,8 @@
         usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
         errorWords = JSON.parse(localStorage.getItem('m_error_' + currentUser)) || [];
         showPage('page-home');
+        // 確保儀表板初始化
+        setTimeout(() => updateProgressDashboard(), 100);
     };
 
     window.showPage = id => {
@@ -267,6 +302,9 @@
         const stats = getDailyStats();
         document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3";
         document.getElementById('start-btn').disabled = (stats.count >= 3);
+
+        // ====== 更新完成度儀表板 ======
+        updateProgressDashboard();
     };
 
     window.showSpriteDetail = (s) => {
@@ -568,6 +606,51 @@
         let s = JSON.parse(localStorage.getItem(key)) || { date: today, count: 0 };
         if (s.date !== today) s = { date: today, count: 0 };
         return s;
+    }
+
+    // ====== 完成度儀表板計算 ======
+    function updateProgressDashboard() {
+        const pool = officialWords[currentUser] || [];
+        const totalCount = pool.length;
+        const usedCount = usedWords.length;
+        const errorCount = errorWords.length;
+        const correctCount = usedCount - errorCount;
+
+        // 計算輪次和進度
+        const round = Math.floor(usedCount / totalCount) + 1;
+        const progressInRound = usedCount % totalCount;
+        const remainingInRound = totalCount - progressInRound;
+        const progressPct = Math.round((progressInRound / totalCount) * 100);
+
+        // 更新 HTML
+        document.getElementById('progress-round').innerText = `第 ${round} 輪`;
+        document.getElementById('used-count').innerText = progressInRound;
+        document.getElementById('total-count').innerText = totalCount;
+        document.getElementById('correct-count').innerText = correctCount;
+        document.getElementById('error-count').innerText = errorCount;
+        document.getElementById('progress-pct').innerText = progressPct + '%';
+        document.getElementById('progress-bar').style.width = progressPct + '%';
+
+        // 提示文字
+        let hint = '';
+        if (progressInRound === 0 && round === 1) {
+            hint = '準備好了嗎？開始挑戰吧！🚀';
+        } else if (progressInRound === totalCount) {
+            hint = '🎉 恭喜！本輪已完成，可繼續強化錯誤題或開始下一輪';
+        } else {
+            hint = `再練習 ${remainingInRound} 題即可完成第 ${round} 輪`;
+        }
+        document.getElementById('progress-hint').innerText = hint;
+
+        // 進度條顏色根據完成度變化
+        const bar = document.getElementById('progress-bar');
+        if (progressPct < 50) {
+            bar.style.background = 'linear-gradient(90deg, #FF3B30, #FF69B4)';
+        } else if (progressPct < 100) {
+            bar.style.background = 'linear-gradient(90deg, #00D2FF, #FFD700)';
+        } else {
+            bar.style.background = 'linear-gradient(90deg, #FFD700, #4CAF50)';
+        }
     }
 
     // ====== 語速修改：放慢1倍 (rate = 0.5) ======
