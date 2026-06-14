@@ -14,7 +14,7 @@
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
         .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 120px; }
         .word-display { font-size: 65px; font-weight: 900; letter-spacing: 8px; color: #222; }
-        .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
+        .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; min-height: 200px; }
         .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .scroll-icon b { margin-top: 5px; color: var(--m-gold); display: block; width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
         .sprite-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 6px 4px; text-align: center; font-size: 8px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.2s; }
@@ -33,6 +33,7 @@
         .btn { padding: 15px; border-radius: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 5px 0; width: 100%; text-align: center; display: block; box-sizing: border-box; }
         .btn-gold { background: linear-gradient(45deg, var(--m-gold), #FFA500); color: black !important; }
         .btn-outline { background: transparent; border: 2px solid var(--m-blue); color: white !important; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #zoom-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index: 9999; display:none; align-items:center; justify-content:center; }
@@ -57,6 +58,9 @@
         .difficulty-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
         .difficulty-error { background: rgba(255,59,48,0.3); color: #FF6B6B; }
         .difficulty-new { background: rgba(0,210,255,0.2); color: #00D2FF; }
+
+        /* 首頁按鈕區 - 重要修正 */
+        #buttons-container { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -133,10 +137,10 @@
 
     <div id="tome-grid" class="tome-grid"></div>
     
-    <!-- 按鈕區域（固定在底部） -->
-    <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px; flex-shrink:0; position:sticky; bottom:0; background:var(--m-purple); padding-top:10px; z-index:100;">
-        <button onclick="resetProgress()" style="width:100%; padding:10px; border-radius:12px; border:1px solid rgba(255,59,48,0.5); background:transparent; color:rgba(255,59,48,0.8); font-size:13px; cursor:pointer;">🔄 重置練習進度（精靈保留）</button>
-        <button id="start-btn" class="btn btn-gold" onclick="window.showPage('page-mode-select')">⚔️ 開始挑戰</button>
+    <!-- 按鈕區域 - 確保永遠可見 -->
+    <div id="buttons-container">
+        <button id="reset-btn" onclick="resetProgress()" style="width:100%; padding:10px; border-radius:12px; border:1px solid rgba(255,59,48,0.5); background:transparent; color:rgba(255,59,48,0.8); font-size:13px; cursor:pointer;">🔄 重置練習進度（精靈保留）</button>
+        <button id="start-btn" class="btn btn-gold" onclick="handleStartGame()">⚔️ 開始挑戰</button>
     </div>
 </div>
 
@@ -150,52 +154,47 @@
     <div style="margin-top:20px; background:rgba(255,255,255,0.07); border-radius:14px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">
         <div>
             <div style="font-size:14px; font-weight:bold;">⚡ 每日三次限額</div>
-            <div id="daily-limit-desc" style="font-size:11px; color:rgba(255,255,255,0.5); margin-top:3px;">開啟：完成後可開寶箱</div>
+            <div id="daily-limit-desc" style="font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px;">開啟：完成後可開寶箱</div>
         </div>
-        <div id="daily-limit-toggle" onclick="toggleDailyLimit()" style="width:52px; height:28px; border-radius:14px; background:var(--m-gold); cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0;">
-            <div id="daily-limit-knob" style="width:22px; height:22px; background:white; border-radius:50%; position:absolute; top:3px; left:27px; transition:left 0.2s; box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+        <div id="daily-limit-toggle" style="position:relative; width:56px; height:28px; background:var(--m-gold); border-radius:14px; cursor:pointer; transition:all 0.3s; flex-shrink:0;" onclick="toggleDailyLimit()">
+            <div id="daily-limit-knob" style="position:absolute; top:2px; left:27px; width:24px; height:24px; background:white; border-radius:50%; transition:all 0.3s; box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>
         </div>
     </div>
-
-    <button class="btn btn-outline" style="margin-top:auto;" onclick="showPage('page-home')">返回</button>
 </div>
 
-<!-- 4. 作答拍照（每題拍一張，不送 AI）-->
+<!-- 4. 拍照 -->
 <div id="page-collect" class="page">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span id="progress-label" style="font-size:16px; font-weight:bold;">試煉 1 / 10</span>
-        <button onclick="stopCameraAndHome()">✕</button>
+        <span id="progress-label" style="font-size:14px; color:var(--m-gold);">試煉 ? / 10</span>
+        <button onclick="stopCameraAndHome()" style="padding:8px 12px; border-radius:8px; border:1px solid var(--m-red); background:transparent; color:var(--m-red); cursor:pointer;">❌ 放棄</button>
     </div>
-
-    <div class="magic-card" style="margin-top:10px;">
-        <div id="ui-dictation" style="display:none; text-align:center;">
-            <div style="font-size:70px; cursor:pointer;" onclick="window.speakCurrentWord()">🔊</div>
-            <p style="font-size:13px; color:#888; margin:5px 0 0;">點擊喇叭聆聽（語速已放慢），在紙上寫好後拍照</p>
-        </div>
-        <div id="ui-copying" style="display:none;">
-            <div id="target-word" class="word-display">...</div>
-            <p style="font-size:13px; color:#888; margin:5px 0 0;">照抄到紙上後拍照</p>
-        </div>
+    <div class="magic-card" style="margin:15px 0; flex-grow:0;">
+        <span style="font-size:12px; color:#999; margin-bottom:10px;">📝 目標字</span>
+        <div id="target-word" class="word-display">?</div>
     </div>
-
+    <div id="ui-dictation" style="display:none; text-align:center; margin:10px 0;">
+        <button class="btn btn-gold" style="margin-bottom:10px;" onclick="window.speakCurrentWord()">🎧 播放發音</button>
+        <p style="font-size:12px; color:rgba(255,255,255,0.6);">✍️ 在紙上寫下答案，然後拍照</p>
+    </div>
+    <div id="ui-copying" style="display:none; text-align:center; margin:10px 0;">
+        <p style="font-size:12px; color:rgba(255,255,255,0.6);">✍️ 照著上面的字寫下來，然後拍照</p>
+    </div>
     <div class="camera-container">
-        <video id="video" autoplay playsinline></video>
+        <video id="video" muted playsinline></video>
         <div class="viewfinder"></div>
-        <div id="flash" class="flash"></div>
+        <div class="flash" id="flash"></div>
     </div>
-
-    <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:4px;">已拍紀錄（點擊可放大）：</div>
-    <div id="thumb-strip" class="thumb-strip"></div>
-
-    <button id="capture-btn" class="btn btn-gold" style="margin-top:10px;" onclick="capturePhoto()">📸 拍照確認此題</button>
+    <div class="thumb-strip" id="thumb-strip"></div>
+    <button class="btn btn-gold" onclick="window.capturePhoto()">📸 拍照</button>
+    <button class="btn btn-outline" id="submit-btn" style="margin-top:8px; display:none;" onclick="window.submitPhotos()">✅ 確定送出</button>
 </div>
 
-<!-- 5. 鑑定結果頁 -->
+<!-- 5. 鑑定報告 -->
 <div id="page-review" class="page">
-    <h2 style="text-align:center; color:var(--m-gold); margin:0 0 5px;">📋 鑑定報告</h2>
-    <p id="review-summary" style="text-align:center; font-size:14px; color:rgba(255,255,255,0.65); margin:0 0 12px;"></p>
-    <div id="result-list" class="result-list"></div>
-    <button class="btn btn-gold" style="margin-top:10px;" onclick="goToTreasure()">🎁 前往藏寶室</button>
+    <h2 style="text-align:center; color:var(--m-gold); margin:0 0 15px;">📋 鑑定報告</h2>
+    <div id="review-summary" style="text-align:center; font-size:24px; color:var(--m-gold); margin-bottom:15px; font-weight:bold;">0 / 10 正確</div>
+    <div class="result-list" id="result-list"></div>
+    <button class="btn btn-gold" id="treasure-btn" style="margin-top:15px;" onclick="goToTreasure()">🎁 前往藏寶室</button>
 </div>
 
 <!-- 6. 寶箱 -->
@@ -237,7 +236,8 @@
 
     let currentUser="", currentMode="", mySpells=[], usedWords=[], errorWords=[], challenges=[];
     let currentIdx=0, maxChallenges=10, stream=null, chestLocked=false, score=0;
-    let capturedPhotos = []; // 存每題照片 dataURL
+    let capturedPhotos = [];
+    let dailyLimitOn = true;
 
     window.onload = () => {
         if (localStorage.getItem('gemini_api_key_v2'))
@@ -254,16 +254,14 @@
         mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
         usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
         errorWords = JSON.parse(localStorage.getItem('m_error_' + currentUser)) || [];
+        dailyLimitOn = JSON.parse(localStorage.getItem('m_limit_' + currentUser) ?? 'true');
 
-        // 建立並持久化打亂後的題目順序（只在第一次或詞庫變動時重建）
         const pool = officialWords[currentUser] || [];
         let shuffledKey = 'm_shuffled_' + currentUser;
         let stored = JSON.parse(localStorage.getItem(shuffledKey)) || [];
-        // 若 stored 和 pool 的題目組成不一致，重新洗牌
         const sameSet = stored.length === pool.length && pool.every(w => stored.includes(w));
         if (!sameSet) {
-            stored = [...pool].sort(() => Math.random() - 0.5);
-            // 用 Fisher-Yates 確保公平打亂
+            stored = [...pool];
             for (let i = stored.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [stored[i], stored[j]] = [stored[j], stored[i]];
@@ -279,6 +277,7 @@
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         if (id === 'page-home') renderHome();
+        if (id === 'page-mode-select') updateLimitToggle();
     };
 
     let currentTab = 'all';
@@ -291,7 +290,6 @@
         localStorage.removeItem('m_daily_' + currentUser);
         usedWords = [];
         errorWords = [];
-        // 重新洗牌
         const pool = officialWords[currentUser] || [];
         const reshuffled = [...pool];
         for (let i = reshuffled.length - 1; i > 0; i--) {
@@ -354,10 +352,19 @@
 
         const stats = getDailyStats();
         document.getElementById('daily-energy').innerText = stats.count;
-        document.getElementById('start-btn').disabled = false;
-
-        // ====== 更新完成度儀表板 ======
+        updateStartButtonState();
         updateProgressDashboard();
+    };
+
+    window.updateStartButtonState = () => {
+        const startBtn = document.getElementById('start-btn');
+        startBtn.disabled = false;
+        startBtn.title = '';
+        startBtn.innerText = '⚔️ 開始挑戰';
+    };
+
+    window.handleStartGame = () => {
+        showPage('page-mode-select');
     };
 
     window.showSpriteDetail = (s) => {
@@ -379,42 +386,40 @@
         document.body.appendChild(modal);
     };
 
-    let dailyLimitOn = true; // 預設開啟
-
     window.toggleDailyLimit = () => {
         dailyLimitOn = !dailyLimitOn;
+        localStorage.setItem('m_limit_' + currentUser, dailyLimitOn);
+        updateLimitToggle();
+    };
+
+    window.updateLimitToggle = () => {
         const knob = document.getElementById('daily-limit-knob');
         const track = document.getElementById('daily-limit-toggle');
         const desc = document.getElementById('daily-limit-desc');
         if (dailyLimitOn) {
             track.style.background = 'var(--m-gold)';
             knob.style.left = '27px';
-            desc.innerText = '開啟：完成後可開寶箱';
+            desc.innerText = '開啟：開寶箱會扣次數';
         } else {
             track.style.background = 'rgba(255,255,255,0.2)';
             knob.style.left = '3px';
-            desc.innerText = '關閉：無限練習，但不計入寶箱次數';
+            desc.innerText = '關閉：開寶箱不扣次數';
         }
     };
 
-    // ====== 出題邏輯：錯誤題優先 + 新題補滿，全部隨機 ======
     window.startGame = mode => {
         currentMode = mode;
         const pool = officialWords[currentUser] || [];
-        // 讀取一次性洗牌後的固定順序
         const shuffled = JSON.parse(localStorage.getItem('m_shuffled_' + currentUser)) || [...pool];
 
-        // 錯誤題（Fisher-Yates 打亂）
         const errorPool = shuffled.filter(w => errorWords.includes(w));
         for (let i = errorPool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [errorPool[i], errorPool[j]] = [errorPool[j], errorPool[i]];
         }
 
-        // 新題：照 shuffled 固定順序，跳過已練過與錯誤題
         const newPool = shuffled.filter(w => !usedWords.includes(w) && !errorWords.includes(w));
 
-        // 已完成題（備用回收，打亂）
         const donePool = shuffled.filter(w => usedWords.includes(w) && !errorWords.includes(w));
         for (let i = donePool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -422,29 +427,23 @@
         }
 
         let selected = [];
-
-        // 1. 錯誤題（最多填滿一半）
         const errorSlots = Math.min(errorPool.length, Math.floor(maxChallenges / 2));
         selected = selected.concat(errorPool.slice(0, errorSlots));
 
-        // 2. 新題補滿（照 shuffled 固定順序往前推）
         const needed = maxChallenges - selected.length;
         const newPick = newPool.slice(0, needed);
         selected = selected.concat(newPick);
 
-        // 3. 新題不足時回收已完成題補滿
         if (selected.length < maxChallenges) {
             selected = selected.concat(donePool.slice(0, maxChallenges - selected.length));
         }
 
-        // 最後 Fisher-Yates 整體打亂，避免錯誤題固定在前面
         for (let i = selected.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [selected[i], selected[j]] = [selected[j], selected[i]];
         }
         challenges = selected.slice(0, maxChallenges);
 
-        // 將本輪新題記入 usedWords
         const newlyUsed = newPick.filter(w => !usedWords.includes(w));
         usedWords = [...usedWords, ...newlyUsed];
         localStorage.setItem('m_used_' + currentUser, JSON.stringify(usedWords));
@@ -466,7 +465,6 @@
         } catch (e) { alert("相機失敗：" + e.message); }
     }
 
-    // ---- 拍照：存在記憶體，不送 API ----
     window.capturePhoto = function() {
         const v = document.getElementById('video');
         const c = document.getElementById('proc-canvas');
@@ -478,124 +476,104 @@
         const vfW_disp = displayW * 0.85, vfH_disp = 120;
         const vfX_disp = (displayW - vfW_disp) / 2;
         const vfY_disp = (displayH - vfH_disp) / 2;
-        const offsetX = (vw - displayW * scale) / 2;
-        const offsetY = (vh - displayH * scale) / 2;
 
-        c.width = 900; c.height = 300;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, 900, 300);
-        ctx.drawImage(v,
-            offsetX + vfX_disp * scale,
-            offsetY + vfY_disp * scale,
-            vfW_disp * scale,
-            vfH_disp * scale,
-            0, 0, 900, 300
-        );
-        const dataUrl = c.toDataURL('image/jpeg', 0.85);
+        const vfX = vfX_disp * scale, vfY = vfY_disp * scale;
+        const vfW = vfW_disp * scale, vfH = vfH_disp * scale;
+
+        c.width = vfW; c.height = vfH;
+        ctx.drawImage(v, vfX, vfY, vfW, vfH, 0, 0, vfW, vfH);
+
+        const dataURL = c.toDataURL('image/jpeg');
+        capturedPhotos[currentIdx] = dataURL;
+
+        const thumb = document.createElement('img');
+        thumb.src = dataURL;
+        thumb.className = 'captured';
+        thumb.onclick = () => openZoom(dataURL);
+        document.getElementById('thumb-strip').appendChild(thumb);
 
         const flash = document.getElementById('flash');
         flash.style.opacity = '1';
-        setTimeout(() => { flash.style.opacity = '0'; }, 120);
+        setTimeout(() => flash.style.opacity = '0', 50);
 
-        capturedPhotos[currentIdx] = dataUrl;
-
-        const strip = document.getElementById('thumb-strip');
-        let img = document.getElementById('thumb-' + currentIdx);
-        if (!img) {
-            img = document.createElement('img');
-            img.id = 'thumb-' + currentIdx;
-            strip.appendChild(img);
-        }
-        img.src = dataUrl;
-        img.className = 'captured';
-        img.title = challenges[currentIdx];
-        img.onclick = () => { document.getElementById('zoom-img').src = dataUrl; document.getElementById('zoom-modal').style.display = 'flex'; };
-
-        if (currentIdx < maxChallenges - 1) {
-            currentIdx++;
+        currentIdx++;
+        if (currentIdx < maxChallenges) {
             updateUI();
         } else {
-            stopCamera();
-            runAIJudge();
+            document.getElementById('submit-btn').style.display = 'block';
         }
     };
 
-    // ---- 一次送全部照片給 AI ----
-    async function runAIJudge() {
-        const key = localStorage.getItem('gemini_api_key_v2');
-        const n = capturedPhotos.length;
-        document.getElementById('loader-text').innerText = `🔍 Gemini 正在鑑定 ${n} 張照片，請稍候...`;
+    window.submitPhotos = async function() {
         document.getElementById('loader').style.display = 'flex';
+        const apiKey = localStorage.getItem('gemini_api_key_v2');
+        const prompt = `請以繁體中文辨識這 ${maxChallenges} 張手寫圖片中的文字。允許潦草的字跡。
+目標字：${challenges.join('、')}
+請逐題回答，回傳 JSON 陣列，格式如下：
+[{"idx":0,"recognized":"字","pass":true},{"idx":1,"recognized":"字","pass":false},...]
+其中 pass 表示是否正確（即使潦草也算正確）。
+只回傳 JSON，不要其他文字。`;
+
+        const imageBase64 = capturedPhotos.map(p => p.replace('data:image/jpeg;base64,', '')).filter(p => p);
+        const requestBody = {
+            contents: [
+                {
+                    parts: [
+                        ...imageBase64.map(b64 => ({
+                            inline_data: { mime_type: "image/jpeg", data: b64 }
+                        })),
+                        { text: prompt }
+                    ]
+                }
+            ]
+        };
 
         try {
-            const parts = [];
-            parts.push({ text:
-                `你是繁體中文手寫辨識專家。以下共 ${n} 道題，每題有目標字與一張手寫照片。\n` +
-                `請依序判斷每張照片的手寫字是否符合目標字（允許潦草）。\n` +
-                `只回傳 JSON 陣列，格式：[{"correct":true},{"correct":false},...]\n不要任何其他說明或 markdown。`
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
             });
 
-            capturedPhotos.forEach((dataUrl, i) => {
-                parts.push({ text: `\n第 ${i + 1} 題，目標字：「${challenges[i]}」` });
-                parts.push({ inline_data: { mime_type: "image/jpeg", data: dataUrl.split(',')[1] } });
-            });
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts }] })
-            });
-            const json = await res.json();
-            if (json.error) throw new Error(json.error.message);
-
-            let txt = json.candidates[0].content.parts[0].text.trim();
-            txt = txt.replace(/```json|```/g, '').trim();
-            const results = JSON.parse(txt);
+            const data = await response.json();
+            const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const cleanResult = resultText.replace(/```json|```/g, '').trim();
+            const results = JSON.parse(cleanResult);
 
             document.getElementById('loader').style.display = 'none';
             showReview(results);
-
         } catch (e) {
             document.getElementById('loader').style.display = 'none';
-            alert("AI 鑑定失敗：" + e.message + "\n\n將改為人工確認模式。");
+            alert('AI 鑑定失敗，改用人工確認');
             showReviewManual();
         }
-    }
+    };
 
-    // ---- 顯示 AI 鑑定結果 ----
     function showReview(results) {
         score = 0;
         const list = document.getElementById('result-list');
         list.innerHTML = '';
 
         results.forEach((r, i) => {
-            const correct = r.correct === true;
-            if (correct) score++;
-            
-            // 更新錯誤清單
-            if (!correct && !errorWords.includes(challenges[i])) {
-                errorWords.push(challenges[i]);
-            } else if (correct && errorWords.includes(challenges[i])) {
-                errorWords = errorWords.filter(w => w !== challenges[i]);
-            }
-            
             const row = document.createElement('div');
             row.className = 'result-row';
-            row.dataset.correct = correct ? '1' : '0';
-            row.style.borderLeftColor = correct ? 'var(--m-gold)' : 'var(--m-red)';
+            row.id = `row-${i}`;
+            row.dataset.correct = r.pass ? '1' : '0';
+            if (r.pass) score++;
+
             row.innerHTML = `
                 <img src="${capturedPhotos[i]}" onclick="openZoom('${capturedPhotos[i]}')">
                 <span class="rword">${challenges[i]}</span>
-                <span class="verdict">${correct ? '✅' : '❌'}</span>
-                ${!correct ? `<button class="manual-btn" onclick="manualPass(${i},this)">🙋 人工通過</button>` : ''}
+                <span style="font-size:12px; color:rgba(255,255,255,0.6);">${r.recognized}</span>
+                <button class="manual-btn" style="border-color:#4CAF50; color:#4CAF50;" onclick="manualPass(${i},this)">✅</button>
+                <button class="manual-btn" style="border-color:var(--m-red); color:var(--m-red);" onclick="manualFail(${i},this)">❌</button>
+                <span class="verdict">${r.pass ? '✅' : '❌'}</span>
             `;
+            if (r.pass) row.style.borderLeftColor = 'var(--m-gold)';
             list.appendChild(row);
         });
 
-        localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
         updateReviewSummary();
-        // 更新前往寶箱按鈕文字
         const treasureBtn = document.querySelector('#page-review .btn-gold');
         if (treasureBtn) {
             treasureBtn.innerText = dailyLimitOn ? '🎁 前往藏寶室' : '🏠 返回首頁';
@@ -603,7 +581,6 @@
         showPage('page-review');
     }
 
-    // ---- 人工確認模式 ----
     function showReviewManual() {
         score = 0;
         const list = document.getElementById('result-list');
@@ -635,7 +612,6 @@
         const row = btn.closest('.result-row');
         if (row.dataset.correct === '0') { score++; row.dataset.correct = '1'; }
         
-        // 從錯誤清單移除
         if (errorWords.includes(challenges[idx])) {
             errorWords = errorWords.filter(w => w !== challenges[idx]);
             localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
@@ -653,7 +629,6 @@
         const row = btn.closest('.result-row');
         row.dataset.correct = '0';
         
-        // 加入錯誤清單
         if (!errorWords.includes(challenges[idx])) {
             errorWords.push(challenges[idx]);
             localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
@@ -673,10 +648,6 @@
     }
 
     window.goToTreasure = () => {
-        if (!dailyLimitOn) {
-            showPage('page-home');
-            return;
-        }
         chestLocked = false;
         // 隨機將 100%、70%、30% 分配給三個箱子
         const probs = [1.0, 0.7, 0.3].sort(() => 0.5 - Math.random());
@@ -709,7 +680,6 @@
         return s;
     }
 
-    // ====== 完成度儀表板計算 ======
     function updateProgressDashboard() {
         const pool = officialWords[currentUser] || [];
         const totalCount = pool.length;
@@ -717,13 +687,11 @@
         const errorCount = errorWords.length;
         const correctCount = usedCount - errorCount;
 
-        // 計算輪次和進度
         const round = Math.floor(usedCount / totalCount) + 1;
         const progressInRound = usedCount % totalCount;
         const remainingInRound = totalCount - progressInRound;
         const progressPct = Math.round((progressInRound / totalCount) * 100);
 
-        // 更新 HTML
         document.getElementById('progress-round').innerText = `第 ${round} 輪`;
         document.getElementById('used-count').innerText = progressInRound;
         document.getElementById('total-count').innerText = totalCount;
@@ -732,7 +700,6 @@
         document.getElementById('progress-pct').innerText = progressPct + '%';
         document.getElementById('progress-bar').style.width = progressPct + '%';
 
-        // 提示文字
         let hint = '';
         if (progressInRound === 0 && round === 1) {
             hint = '準備好了嗎？開始挑戰吧！🚀';
@@ -743,7 +710,6 @@
         }
         document.getElementById('progress-hint').innerText = hint;
 
-        // 進度條顏色根據完成度變化
         const bar = document.getElementById('progress-bar');
         if (progressPct < 50) {
             bar.style.background = 'linear-gradient(90deg, #FF3B30, #FF69B4)';
@@ -754,18 +720,18 @@
         }
     }
 
-    // ====== 語速修改：放慢1倍 (rate = 0.5) ======
     window.speakWord = t => { 
         const m = new SpeechSynthesisUtterance(t); 
         m.lang = 'zh-TW'; 
-        m.rate = 0.5;  // 放慢1倍（預設 1.0 → 現在 0.5）
+        m.rate = 0.5;
         speechSynthesis.speak(m); 
     };
     window.speakCurrentWord = () => window.speakWord(challenges[currentIdx]);
     window.openZoom = s => { document.getElementById('zoom-img').src = s; document.getElementById('zoom-modal').style.display = 'flex'; };
 
     window.openChest = el => {
-        if (chestLocked) return; chestLocked = true;
+        if (chestLocked) return; 
+        chestLocked = true;
         const stats = getDailyStats();
         const prob = parseFloat(el.dataset.prob ?? 1.0);
         el.innerText = '🎊';
@@ -785,8 +751,11 @@
                     mySpells.push(prize);
                     localStorage.setItem('m_mine_' + currentUser, JSON.stringify(mySpells));
                 }
-                stats.count++;
-                localStorage.setItem('m_daily_' + currentUser, JSON.stringify(stats));
+                // 根據dailyLimitOn決定是否計入次數
+                if (dailyLimitOn) {
+                    stats.count++;
+                    localStorage.setItem('m_daily_' + currentUser, JSON.stringify(stats));
+                }
                 confetti({ particleCount: 120, spread: 80, colors: ['#FFD700','#FF69B4','#00BFFF','#7FFF00'] });
                 document.getElementById('prize-sprite').innerText = prize.e;
                 document.getElementById('prize-name').innerText = (isNew ? '🆕 新精靈！' : '✨ 已收藏') + '「' + prize.n + '」';
@@ -796,7 +765,6 @@
                 document.getElementById('prize-name').innerText = '修煉不足';
                 document.getElementById('prize-type').innerText = '答對 80% 才能收服精靈喔！';
             } else {
-                // 機率未命中
                 document.getElementById('prize-sprite').innerText = '💨';
                 document.getElementById('prize-name').innerText = '精靈溜走了！';
                 document.getElementById('prize-type').innerText = `這個寶箱的機率是 ${Math.round(prob * 100)}%，手氣差了一點…`;
