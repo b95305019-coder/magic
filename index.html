@@ -132,9 +132,11 @@
     </div>
 
     <div id="tome-grid" class="tome-grid"></div>
-    <div style="margin-top:15px;"><button id="start-btn" class="btn btn-gold" onclick="window.showPage('page-mode-select')">⚔️ 開始挑戰</button></div>
-    <div style="margin-top:8px;">
-        <button onclick="resetProgress()" style="width:100%; padding:10px; border-radius:12px; border:1px solid rgba(255,59,48,0.5); background:transparent; color:rgba(255,59,48,0.8); font-size:13px; cursor:pointer;">🔄 重置練習進度（精靈保留）</button>
+    
+    <!-- 按鈕區域 -->
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">
+        <button onclick="resetProgress()" style="width:100%; padding:10px; border-radius:12px; border:1px solid rgba(255,59,48,0.5); background:transparent; color:rgba(255,59,48,0.8); font-size:13px; cursor:pointer; flex-shrink:0;">🔄 重置練習進度（精靈保留）</button>
+        <button id="start-btn" class="btn btn-gold" style="flex-shrink:0;" onclick="window.showPage('page-mode-select')">⚔️ 開始挑戰</button>
     </div>
 </div>
 
