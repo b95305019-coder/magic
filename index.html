@@ -521,7 +521,6 @@
             const ctx = c.getContext('2d');
 
             const vw = v.videoWidth, vh = v.videoHeight;
-            const displayW = v.clientWidth, displayH = v.clientHeight;
             
             if (vw === 0 || vh === 0) {
                 alert('❌ 相機還未準備好，請稍候再試');
@@ -529,16 +528,18 @@
                 return;
             }
             
-            const scale = Math.max(vw / displayW, vh / displayH);
-            const vfW_disp = displayW * 0.85, vfH_disp = 120;
-            const vfX_disp = (displayW - vfW_disp) / 2;
-            const vfY_disp = (displayH - vfH_disp) / 2;
+            // 從視頻中央截取區域（寬度85%，高度約140px比例）
+            const cropWidth = vw * 0.85;
+            const cropHeight = (cropWidth / 0.85) * (120 / (v.clientWidth * 0.85)); // 保持顯示比例
+            const cropX = (vw - cropWidth) / 2;
+            const cropY = (vh - cropHeight) / 2;
 
-            const vfX = vfX_disp * scale, vfY = vfY_disp * scale;
-            const vfW = vfW_disp * scale, vfH = vfH_disp * scale;
-
-            c.width = vfW; c.height = vfH;
-            ctx.drawImage(v, vfX, vfY, vfW, vfH, 0, 0, vfW, vfH);
+            // 設置canvas尺寸
+            c.width = cropWidth;
+            c.height = cropHeight;
+            
+            // 從視頻截取區域
+            ctx.drawImage(v, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
             const dataURL = c.toDataURL('image/jpeg');
             capturedPhotos[currentIdx] = dataURL;
