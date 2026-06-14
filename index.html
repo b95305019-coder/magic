@@ -180,7 +180,7 @@
         <p style="font-size:12px; color:rgba(255,255,255,0.6);">✍️ 照著上面的字寫下來，然後拍照</p>
     </div>
     <div class="camera-container">
-        <video id="video" muted playsinline></video>
+        <video id="video" muted playsinline autoplay></video>
         <div class="viewfinder"></div>
         <div class="flash" id="flash"></div>
     </div>
@@ -482,12 +482,34 @@
     async function startCamera() {
         try {
             console.log('%c📹 開始啟動相機...', 'color: #00D2FF; font-weight: bold;');
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } } });
-            document.getElementById('video').srcObject = stream;
-            console.log('%c✅ 相機啟動成功', 'color: #4CAF50; font-weight: bold;');
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+            
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            
+            // 等待視頻流開始播放
+            video.onloadedmetadata = () => {
+                video.play();
+                console.log('%c✅ 相機啟動成功，視頻已開始播放', 'color: #4CAF50; font-weight: bold;');
+            };
+            
+            // 5秒超時檢查
+            setTimeout(() => {
+                if (video.videoWidth === 0) {
+                    console.warn('%c⚠️ 相機5秒後仍未就緒，請檢查相機權限', 'color: #FFB300;');
+                }
+            }, 5000);
+            
         } catch (e) { 
             console.error('%c❌ 相機啟動失敗:', 'color: #FF3B30; font-weight: bold;', e);
-            alert("相機失敗：" + e.message); 
+            alert("❌ 相機權限被拒絕或不支援\n\n請在手機設定中允許 Chrome 使用相機\n\niOS: 設定 → Chrome → 相機 → 開啟\nAndroid: 應用程式設定 → Chrome → 權限 → 相機 → 允許");
         }
     }
 
