@@ -481,47 +481,66 @@
 
     async function startCamera() {
         try {
+            console.log('%c📹 開始啟動相機...', 'color: #00D2FF; font-weight: bold;');
             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } } });
             document.getElementById('video').srcObject = stream;
-        } catch (e) { alert("相機失敗：" + e.message); }
+            console.log('%c✅ 相機啟動成功', 'color: #4CAF50; font-weight: bold;');
+        } catch (e) { 
+            console.error('%c❌ 相機啟動失敗:', 'color: #FF3B30; font-weight: bold;', e);
+            alert("相機失敗：" + e.message); 
+        }
     }
 
     window.capturePhoto = function() {
-        const v = document.getElementById('video');
-        const c = document.getElementById('proc-canvas');
-        const ctx = c.getContext('2d');
+        try {
+            console.log('%c📸 拍照中...', 'color: #FFD700; font-weight: bold;');
+            const v = document.getElementById('video');
+            const c = document.getElementById('proc-canvas');
+            const ctx = c.getContext('2d');
 
-        const vw = v.videoWidth, vh = v.videoHeight;
-        const displayW = v.clientWidth, displayH = v.clientHeight;
-        const scale = Math.max(vw / displayW, vh / displayH);
-        const vfW_disp = displayW * 0.85, vfH_disp = 120;
-        const vfX_disp = (displayW - vfW_disp) / 2;
-        const vfY_disp = (displayH - vfH_disp) / 2;
+            const vw = v.videoWidth, vh = v.videoHeight;
+            const displayW = v.clientWidth, displayH = v.clientHeight;
+            
+            if (vw === 0 || vh === 0) {
+                alert('❌ 相機還未準備好，請稍候再試');
+                console.warn('視頻寬高為0，相機未準備好');
+                return;
+            }
+            
+            const scale = Math.max(vw / displayW, vh / displayH);
+            const vfW_disp = displayW * 0.85, vfH_disp = 120;
+            const vfX_disp = (displayW - vfW_disp) / 2;
+            const vfY_disp = (displayH - vfH_disp) / 2;
 
-        const vfX = vfX_disp * scale, vfY = vfY_disp * scale;
-        const vfW = vfW_disp * scale, vfH = vfH_disp * scale;
+            const vfX = vfX_disp * scale, vfY = vfY_disp * scale;
+            const vfW = vfW_disp * scale, vfH = vfH_disp * scale;
 
-        c.width = vfW; c.height = vfH;
-        ctx.drawImage(v, vfX, vfY, vfW, vfH, 0, 0, vfW, vfH);
+            c.width = vfW; c.height = vfH;
+            ctx.drawImage(v, vfX, vfY, vfW, vfH, 0, 0, vfW, vfH);
 
-        const dataURL = c.toDataURL('image/jpeg');
-        capturedPhotos[currentIdx] = dataURL;
+            const dataURL = c.toDataURL('image/jpeg');
+            capturedPhotos[currentIdx] = dataURL;
 
-        const thumb = document.createElement('img');
-        thumb.src = dataURL;
-        thumb.className = 'captured';
-        thumb.onclick = () => openZoom(dataURL);
-        document.getElementById('thumb-strip').appendChild(thumb);
+            const thumb = document.createElement('img');
+            thumb.src = dataURL;
+            thumb.className = 'captured';
+            thumb.onclick = () => openZoom(dataURL);
+            document.getElementById('thumb-strip').appendChild(thumb);
 
-        const flash = document.getElementById('flash');
-        flash.style.opacity = '1';
-        setTimeout(() => flash.style.opacity = '0', 50);
+            const flash = document.getElementById('flash');
+            flash.style.opacity = '1';
+            setTimeout(() => flash.style.opacity = '0', 50);
 
-        currentIdx++;
-        if (currentIdx < maxChallenges) {
-            updateUI();
-        } else {
-            document.getElementById('submit-btn').style.display = 'block';
+            currentIdx++;
+            console.log(`%c✅ 拍照成功，已拍${currentIdx}/${maxChallenges}張`, 'color: #4CAF50;');
+            if (currentIdx < maxChallenges) {
+                updateUI();
+            } else {
+                document.getElementById('submit-btn').style.display = 'block';
+            }
+        } catch (e) {
+            console.error('%c❌ 拍照失敗:', 'color: #FF3B30; font-weight: bold;', e);
+            alert('❌ 拍照失敗：' + e.message);
         }
     };
 
@@ -684,7 +703,12 @@
 
     function updateUI() {
         document.getElementById('progress-label').innerText = `試煉 ${currentIdx + 1} / ${maxChallenges}`;
-        document.getElementById('target-word').innerText = challenges[currentIdx];
+        // 聽寫測驗不顯示答案，照抄測驗顯示答案
+        if (currentMode === 'dictation') {
+            document.getElementById('target-word').innerText = '🎧';
+        } else {
+            document.getElementById('target-word').innerText = challenges[currentIdx];
+        }
         document.getElementById('ui-dictation').style.display = (currentMode === 'dictation' ? 'block' : 'none');
         document.getElementById('ui-copying').style.display = (currentMode === 'copying' ? 'block' : 'none');
         if (currentMode === 'dictation') setTimeout(() => window.speakCurrentWord(), 400);
