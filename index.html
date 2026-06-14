@@ -249,8 +249,24 @@
         mySpells = JSON.parse(localStorage.getItem('m_mine_' + currentUser)) || [];
         usedWords = JSON.parse(localStorage.getItem('m_used_' + currentUser)) || [];
         errorWords = JSON.parse(localStorage.getItem('m_error_' + currentUser)) || [];
+
+        // 建立並持久化打亂後的題目順序（只在第一次或詞庫變動時重建）
+        const pool = officialWords[currentUser] || [];
+        let shuffledKey = 'm_shuffled_' + currentUser;
+        let stored = JSON.parse(localStorage.getItem(shuffledKey)) || [];
+        // 若 stored 和 pool 的題目組成不一致，重新洗牌
+        const sameSet = stored.length === pool.length && pool.every(w => stored.includes(w));
+        if (!sameSet) {
+            stored = [...pool].sort(() => Math.random() - 0.5);
+            // 用 Fisher-Yates 確保公平打亂
+            for (let i = stored.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [stored[i], stored[j]] = [stored[j], stored[i]];
+            }
+            localStorage.setItem(shuffledKey, JSON.stringify(stored));
+        }
+
         showPage('page-home');
-        // 確保儀表板初始化
         setTimeout(() => updateProgressDashboard(), 100);
     };
 
@@ -360,38 +376,48 @@
     window.startGame = mode => {
         currentMode = mode;
         const pool = officialWords[currentUser] || [];
+        // 讀取一次性洗牌後的固定順序
+        const shuffled = JSON.parse(localStorage.getItem('m_shuffled_' + currentUser)) || [...pool];
 
-        // 錯誤題
-        const errorPool = errorWords.filter(w => pool.includes(w));
+        // 錯誤題（Fisher-Yates 打亂）
+        const errorPool = shuffled.filter(w => errorWords.includes(w));
+        for (let i = errorPool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [errorPool[i], errorPool[j]] = [errorPool[j], errorPool[i]];
+        }
 
-        // 新題 = 沒練習過、也不在錯誤池 → 隨機打亂
-        const newPool = [...pool.filter(w => !usedWords.includes(w) && !errorWords.includes(w))]
-            .sort(() => 0.5 - Math.random());
+        // 新題：照 shuffled 固定順序，跳過已練過與錯誤題
+        const newPool = shuffled.filter(w => !usedWords.includes(w) && !errorWords.includes(w));
 
-        // 已練習且已正確的題（備用回收）
-        const donePool = pool.filter(w => usedWords.includes(w) && !errorWords.includes(w));
+        // 已完成題（備用回收，打亂）
+        const donePool = shuffled.filter(w => usedWords.includes(w) && !errorWords.includes(w));
+        for (let i = donePool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [donePool[i], donePool[j]] = [donePool[j], donePool[i]];
+        }
 
         let selected = [];
 
-        // 1. 隨機抽錯誤題（最多填滿一半，讓新題還是能進來）
+        // 1. 錯誤題（最多填滿一半）
         const errorSlots = Math.min(errorPool.length, Math.floor(maxChallenges / 2));
-        const errorPick = [...errorPool].sort(() => 0.5 - Math.random()).slice(0, errorSlots);
-        selected = selected.concat(errorPick);
+        selected = selected.concat(errorPool.slice(0, errorSlots));
 
-        // 2. 隨機新題補滿
+        // 2. 新題補滿（照 shuffled 固定順序往前推）
         const needed = maxChallenges - selected.length;
         const newPick = newPool.slice(0, needed);
         selected = selected.concat(newPick);
 
-        // 3. 若新題不足，隨機回收已完成題目補滿
+        // 3. 新題不足時回收已完成題補滿
         if (selected.length < maxChallenges) {
-            const recycled = [...donePool].sort(() => 0.5 - Math.random())
-                .slice(0, maxChallenges - selected.length);
-            selected = selected.concat(recycled);
+            selected = selected.concat(donePool.slice(0, maxChallenges - selected.length));
         }
 
-        // 最後整體再打亂一次（避免錯誤題固定在前面）
-        challenges = selected.slice(0, maxChallenges).sort(() => 0.5 - Math.random());
+        // 最後 Fisher-Yates 整體打亂，避免錯誤題固定在前面
+        for (let i = selected.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [selected[i], selected[j]] = [selected[j], selected[i]];
+        }
+        challenges = selected.slice(0, maxChallenges);
 
         // 將本輪新題記入 usedWords
         const newlyUsed = newPick.filter(w => !usedWords.includes(w));
