@@ -89,7 +89,7 @@
         <h3>🧚 <span id="display-user"></span>的精靈圖鑑</h3>
         <button onclick="location.reload()">登出</button>
     </div>
-    <div class="energy-bar">⚡ 今日領獎餘額：<span id="daily-energy">3 / 3</span> &nbsp;｜&nbsp; 🧚 已收服：<span id="owned-count">0</span> / 50</div>
+    <div class="energy-bar">🎁 今日已開寶箱：<span id="daily-energy">0</span> 次 &nbsp;｜&nbsp; 🧚 已收服：<span id="owned-count">0</span> / 50</div>
 
     <!-- 📊 完成度儀表板 -->
     <div id="progress-dashboard" style="background: linear-gradient(135deg, rgba(0,210,255,0.15), rgba(255,215,0,0.1)); border: 2px solid var(--m-blue); border-radius: 15px; padding: 15px; margin-bottom: 15px;">
@@ -140,6 +140,18 @@
     <h2 style="text-align:center; color:var(--m-gold);">選擇模式</h2>
     <div class="btn btn-gold" style="padding:40px;" onclick="startGame('dictation')">🎧 聽寫測驗<span class="difficulty-badge difficulty-new">語速放慢</span></div>
     <div class="btn btn-gold" style="padding:40px; margin-top:20px;" onclick="startGame('copying')">✍️ 照抄測驗</div>
+
+    <!-- 每日限額開關 -->
+    <div style="margin-top:20px; background:rgba(255,255,255,0.07); border-radius:14px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+            <div style="font-size:14px; font-weight:bold;">⚡ 每日三次限額</div>
+            <div id="daily-limit-desc" style="font-size:11px; color:rgba(255,255,255,0.5); margin-top:3px;">開啟：完成後可開寶箱</div>
+        </div>
+        <div id="daily-limit-toggle" onclick="toggleDailyLimit()" style="width:52px; height:28px; border-radius:14px; background:var(--m-gold); cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0;">
+            <div id="daily-limit-knob" style="width:22px; height:22px; background:white; border-radius:50%; position:absolute; top:3px; left:27px; transition:left 0.2s; box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+        </div>
+    </div>
+
     <button class="btn btn-outline" style="margin-top:auto;" onclick="showPage('page-home')">返回</button>
 </div>
 
@@ -300,8 +312,8 @@
         }
 
         const stats = getDailyStats();
-        document.getElementById('daily-energy').innerText = (3 - stats.count) + " / 3";
-        document.getElementById('start-btn').disabled = (stats.count >= 3);
+        document.getElementById('daily-energy').innerText = stats.count;
+        document.getElementById('start-btn').disabled = false;
 
         // ====== 更新完成度儀表板 ======
         updateProgressDashboard();
@@ -326,49 +338,67 @@
         document.body.appendChild(modal);
     };
 
-    // ====== 難度梯次邏輯 ======
+    let dailyLimitOn = true; // 預設開啟
+
+    window.toggleDailyLimit = () => {
+        dailyLimitOn = !dailyLimitOn;
+        const knob = document.getElementById('daily-limit-knob');
+        const track = document.getElementById('daily-limit-toggle');
+        const desc = document.getElementById('daily-limit-desc');
+        if (dailyLimitOn) {
+            track.style.background = 'var(--m-gold)';
+            knob.style.left = '27px';
+            desc.innerText = '開啟：完成後可開寶箱';
+        } else {
+            track.style.background = 'rgba(255,255,255,0.2)';
+            knob.style.left = '3px';
+            desc.innerText = '關閉：無限練習，但不計入寶箱次數';
+        }
+    };
+
+    // ====== 出題邏輯：錯誤題優先 + 新題補滿，全部隨機 ======
     window.startGame = mode => {
         currentMode = mode;
-        let pool = officialWords[currentUser] || [];
-        
-        // 第一優先：錯誤過的題目（需要加強練習）
-        let priorityList = errorWords.filter(w => pool.includes(w));
-        let remaining = pool.filter(w => !errorWords.includes(w) && !usedWords.includes(w));
-        
-        // 如果已使用題目快用完，重置
-        if (remaining.length < maxChallenges && priorityList.length < maxChallenges) {
-            usedWords = [];
-            errorWords = [];
-            priorityList = [];
-            remaining = pool;
-        }
-        
-        // 組合：優先錯誤題 → 新題 → 已使用題（若不足）
+        const pool = officialWords[currentUser] || [];
+
+        // 錯誤題
+        const errorPool = errorWords.filter(w => pool.includes(w));
+
+        // 新題 = 沒練習過、也不在錯誤池 → 隨機打亂
+        const newPool = [...pool.filter(w => !usedWords.includes(w) && !errorWords.includes(w))]
+            .sort(() => 0.5 - Math.random());
+
+        // 已練習且已正確的題（備用回收）
+        const donePool = pool.filter(w => usedWords.includes(w) && !errorWords.includes(w));
+
         let selected = [];
-        
-        // 1. 加入錯誤題（隨機排序）
-        selected = [...priorityList].sort(() => 0.5 - Math.random()).slice(0, Math.ceil(maxChallenges * 0.3));
-        
-        // 2. 加入新題（隨機排序）
+
+        // 1. 隨機抽錯誤題（最多填滿一半，讓新題還是能進來）
+        const errorSlots = Math.min(errorPool.length, Math.floor(maxChallenges / 2));
+        const errorPick = [...errorPool].sort(() => 0.5 - Math.random()).slice(0, errorSlots);
+        selected = selected.concat(errorPick);
+
+        // 2. 隨機新題補滿
+        const needed = maxChallenges - selected.length;
+        const newPick = newPool.slice(0, needed);
+        selected = selected.concat(newPick);
+
+        // 3. 若新題不足，隨機回收已完成題目補滿
         if (selected.length < maxChallenges) {
-            let newWords = remaining.sort(() => 0.5 - Math.random());
-            selected = selected.concat(newWords.slice(0, maxChallenges - selected.length));
+            const recycled = [...donePool].sort(() => 0.5 - Math.random())
+                .slice(0, maxChallenges - selected.length);
+            selected = selected.concat(recycled);
         }
-        
-        // 3. 若仍不足，加入已使用題
-        if (selected.length < maxChallenges) {
-            let recycled = usedWords.filter(w => pool.includes(w) && !selected.includes(w))
-                .sort(() => 0.5 - Math.random());
-            selected = selected.concat(recycled.slice(0, maxChallenges - selected.length));
-        }
-        
-        challenges = selected.slice(0, maxChallenges);
-        
-        // 記錄已使用
-        usedWords = [...usedWords, ...challenges.filter(w => !usedWords.includes(w))];
+
+        // 最後整體再打亂一次（避免錯誤題固定在前面）
+        challenges = selected.slice(0, maxChallenges).sort(() => 0.5 - Math.random());
+
+        // 將本輪新題記入 usedWords
+        const newlyUsed = newPick.filter(w => !usedWords.includes(w));
+        usedWords = [...usedWords, ...newlyUsed];
         localStorage.setItem('m_used_' + currentUser, JSON.stringify(usedWords));
         localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
-        
+
         currentIdx = 0;
         score = 0;
         capturedPhotos = new Array(maxChallenges).fill(null);
@@ -514,6 +544,11 @@
 
         localStorage.setItem('m_error_' + currentUser, JSON.stringify(errorWords));
         updateReviewSummary();
+        // 更新前往寶箱按鈕文字
+        const treasureBtn = document.querySelector('#page-review .btn-gold');
+        if (treasureBtn) {
+            treasureBtn.innerText = dailyLimitOn ? '🎁 前往藏寶室' : '🏠 返回首頁';
+        }
         showPage('page-review');
     }
 
@@ -538,6 +573,10 @@
         });
 
         document.getElementById('review-summary').innerText = '請家長逐題確認';
+        const treasureBtn2 = document.querySelector('#page-review .btn-gold');
+        if (treasureBtn2) {
+            treasureBtn2.innerText = dailyLimitOn ? '🎁 前往藏寶室' : '🏠 返回首頁';
+        }
         showPage('page-review');
     }
 
@@ -583,7 +622,18 @@
     }
 
     window.goToTreasure = () => {
+        if (!dailyLimitOn) {
+            showPage('page-home');
+            return;
+        }
         chestLocked = false;
+        // 隨機將 100%、70%、30% 分配給三個箱子
+        const probs = [1.0, 0.7, 0.3].sort(() => 0.5 - Math.random());
+        const chests = document.querySelectorAll('#chest-zone .chest');
+        chests.forEach((c, i) => {
+            c.dataset.prob = probs[i];
+            c.innerText = '📦';
+        });
         document.getElementById('chest-zone').style.display = 'flex';
         document.getElementById('prize-reveal').style.display = 'none';
         showPage('page-treasure');
@@ -666,11 +716,16 @@
     window.openChest = el => {
         if (chestLocked) return; chestLocked = true;
         const stats = getDailyStats();
+        const prob = parseFloat(el.dataset.prob ?? 1.0);
         el.innerText = '🎊';
         setTimeout(() => {
             document.getElementById('chest-zone').style.display = 'none';
             document.getElementById('prize-reveal').style.display = 'block';
-            if (score >= maxChallenges * 0.8) {
+
+            const passScore = score >= maxChallenges * 0.8;
+            const passProb = Math.random() < prob;
+
+            if (passScore && passProb) {
                 const unowned = defaultSpells.filter(s => !mySpells.some(m => m.n === s.n));
                 const pool = unowned.length > 0 ? unowned : defaultSpells;
                 const prize = pool[Math.floor(Math.random() * pool.length)];
@@ -685,10 +740,15 @@
                 document.getElementById('prize-sprite').innerText = prize.e;
                 document.getElementById('prize-name').innerText = (isNew ? '🆕 新精靈！' : '✨ 已收藏') + '「' + prize.n + '」';
                 document.getElementById('prize-type').innerText = '屬性：' + prize.t + '系';
-            } else {
+            } else if (!passScore) {
                 document.getElementById('prize-sprite').innerText = '😢';
-                document.getElementById('prize-name').innerText = "修煉不足";
+                document.getElementById('prize-name').innerText = '修煉不足';
                 document.getElementById('prize-type').innerText = '答對 80% 才能收服精靈喔！';
+            } else {
+                // 機率未命中
+                document.getElementById('prize-sprite').innerText = '💨';
+                document.getElementById('prize-name').innerText = '精靈溜走了！';
+                document.getElementById('prize-type').innerText = `這個寶箱的機率是 ${Math.round(prob * 100)}%，手氣差了一點…`;
             }
         }, 800);
     };
