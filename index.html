@@ -133,6 +133,9 @@
 
     <div id="tome-grid" class="tome-grid"></div>
     <div style="margin-top:15px;"><button id="start-btn" class="btn btn-gold" onclick="window.showPage('page-mode-select')">⚔️ 開始挑戰</button></div>
+    <div style="margin-top:8px;">
+        <button onclick="resetProgress()" style="width:100%; padding:10px; border-radius:12px; border:1px solid rgba(255,59,48,0.5); background:transparent; color:rgba(255,59,48,0.8); font-size:13px; cursor:pointer;">🔄 重置練習進度（精靈保留）</button>
+    </div>
 </div>
 
 <!-- 3. 模式選擇 -->
@@ -277,6 +280,26 @@
     };
 
     let currentTab = 'all';
+
+    window.resetProgress = () => {
+        if (!confirm(`確定要重置「${currentUser}」的練習進度嗎？\n\n✅ 精靈圖鑑會保留\n❌ 練習紀錄、錯誤題、洗牌順序、今日次數將清除`)) return;
+        localStorage.removeItem('m_used_' + currentUser);
+        localStorage.removeItem('m_error_' + currentUser);
+        localStorage.removeItem('m_shuffled_' + currentUser);
+        localStorage.removeItem('m_daily_' + currentUser);
+        usedWords = [];
+        errorWords = [];
+        // 重新洗牌
+        const pool = officialWords[currentUser] || [];
+        const reshuffled = [...pool];
+        for (let i = reshuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [reshuffled[i], reshuffled[j]] = [reshuffled[j], reshuffled[i]];
+        }
+        localStorage.setItem('m_shuffled_' + currentUser, JSON.stringify(reshuffled));
+        renderHome();
+        alert('✅ 練習進度已重置，精靈圖鑑保留完整！');
+    };
 
     window.setTab = (tab) => {
         currentTab = tab;
