@@ -14,7 +14,7 @@
         .energy-bar { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; margin: 10px 0; font-size: 14px; border-left: 5px solid var(--m-gold); }
         .magic-card { background: var(--m-parchment); color: #333; border-radius: 20px; padding: 20px; text-align: center; border: 5px solid var(--m-blue); box-shadow: 0 0 20px var(--m-blue); position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 120px; }
         .word-display { font-size: 65px; font-weight: 900; letter-spacing: 8px; color: #222; }
-        .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; min-height: 200px; }
+        .tome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; flex-grow: 1; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; min-height: 200px; max-height: calc(100vh - 380px); }
         .scroll-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 9px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .scroll-icon b { margin-top: 5px; color: var(--m-gold); display: block; width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
         .sprite-icon { background: rgba(255,255,255,0.08); border: 1px solid var(--m-gold); border-radius: 10px; padding: 6px 4px; text-align: center; font-size: 8px; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.2s; }
@@ -60,7 +60,7 @@
         .difficulty-new { background: rgba(0,210,255,0.2); color: #00D2FF; }
 
         /* 首頁按鈕區 - 重要修正 */
-        #buttons-container { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; flex-shrink: 0; }
+        #buttons-container { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; flex-shrink: 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; border-top: 1px solid rgba(255,215,0,0.2); }
     </style>
 </head>
 <body>
@@ -216,6 +216,26 @@
 <canvas id="proc-canvas" style="display:none;"></canvas>
 
 <script>
+    // ===== 版本控制 =====
+    const VERSION = '2.1.0 - 完全重制版';
+    console.log('%c魔法大師 v' + VERSION, 'color: #FFD700; font-size: 16px; font-weight: bold;');
+    console.log('%c✅ 頁面已成功加載', 'color: #00D2FF; font-size: 14px;');
+    console.log('%c按鈕容器狀態：', 'color: #FFD700;');
+    
+    // 檢查按鈕容器
+    setTimeout(() => {
+        const container = document.getElementById('buttons-container');
+        if (container) {
+            console.log('%c✅ 按鈕容器找到', 'color: #4CAF50; font-size: 12px;');
+            const style = window.getComputedStyle(container);
+            console.log('  display:', style.display);
+            console.log('  flex-direction:', style.flexDirection);
+            console.log('  flex-shrink:', style.flexShrink);
+        } else {
+            console.error('%c❌ 按鈕容器未找到！', 'color: #FF3B30; font-size: 12px;');
+        }
+    }, 500);
+
     const defaultSpells = [
         {n:"火焰小妖",t:"火系",e:"🔥"},{n:"冰雪精靈",t:"冰系",e:"❄️"},{n:"雷電小精",t:"雷系",e:"⚡"},{n:"風語者",t:"風系",e:"🌪️"},{n:"土地守護",t:"土系",e:"🪨"},
         {n:"星光仙子",t:"光系",e:"⭐"},{n:"月影幽靈",t:"暗系",e:"🌙"},{n:"水晶蝶精",t:"冰系",e:"🦋"},{n:"森林小鬼",t:"自然",e:"🌿"},{n:"花仙子",t:"自然",e:"🌸"},
@@ -319,6 +339,7 @@
     };
 
     window.renderHome = () => {
+        console.log('%c📄 首頁重新渲染', 'color: #00D2FF;');
         const grid = document.getElementById('tome-grid'); grid.innerHTML = '';
         const ownedCount = defaultSpells.filter(s => mySpells.some(m => m.n === s.n)).length;
         document.getElementById('owned-count').innerText = ownedCount;
